@@ -1,0 +1,5 @@
+void Test(int i){
+	if(i < 1){
+		print(i++)
+	}
+}
