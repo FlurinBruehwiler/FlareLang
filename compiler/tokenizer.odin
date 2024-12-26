@@ -1,4 +1,4 @@
-package odin_sublime_template
+package compiler
 
 import "core:fmt"
 import "core:os"
@@ -7,6 +7,7 @@ import "core:unicode/utf8"
 
 Tokenizer :: struct {
 	offset: int,
+	read_offset: int,
 	src: string,
 	ch: rune,
 	path: string,
@@ -60,6 +61,7 @@ Token_Kind :: enum {
 	Lesser_Equal,
 
 	Semicolon,
+	
 	Open_Parenthesis,
 	Close_Parenthesis,
 
@@ -69,41 +71,76 @@ Token_Kind :: enum {
 	Open_Brace,
 	Close_Brace,
 
+	Keyword_Begin,
+		If,
+		Else,
+		For,
+		Return,
+	Keyword_End,
+
+	COUNT
 }
 
-main :: proc(){
+tokens := [Token_Kind.COUNT]string {
+	"EOF",
 
-	file_path := "main.flare"
-	data, success := os.read_entire_file_from_filename(file_path)
+	"identifier",
+	"number",
 
-	if !success {
-		panic("Error reading file")
-	}
+	"+",
+	"+=",
+	"++",
 
-	stringData := string(data)
+	"-",
+	"-=",
+	"--",
 
-	tokenizer := create_tokenizer(stringData, file_path)
+	"*",
+	"*=",
 
+	"/",
+	"/=",
 
+	"!",
+	"!=",
 
-	for {
-		token := scan(&tokenizer)
-		print_token(token)
-		if token.kind == .EOF {
-			break
-		}
-	}
-}
+	"=",
+	"==",
 
-print_token := proc(token: Token){
-	fmt.println("token")
+	">",
+	">=",
+
+	"<",
+	"<=",
+
+	";",
+
+	"(",
+	")",
+
+	"[",
+	"]",
+
+	"{",
+	"}",
+
+	"",
+	"if",
+	"else",
+	"for",
+	"return",
+	""
 }
 
 create_tokenizer :: proc(content: string, file_path: string) -> Tokenizer {
-	return Tokenizer {
+	t := Tokenizer {
 		path = file_path,
 		src = content
 	}
+
+	advance_rune(&t)
+
+	return t
 }
 
 scan :: proc(t: ^Tokenizer) -> Token{
@@ -189,6 +226,7 @@ scan :: proc(t: ^Tokenizer) -> Token{
 			case '}': kind = .Close_Brace
 		}
 	}
+
 	return Token{
 			kind = kind,
 			text = string(t.src[offset : t.offset]),
@@ -238,9 +276,11 @@ offset_to_pos :: proc(t: ^Tokenizer) -> Pos{
 }
 
 advance_rune :: proc(t: ^Tokenizer){
-	if t.offset < len(t.src){
-		r, w := utf8.decode_rune_in_string(t.src[t.offset:])
-		t.offset += w
+	if t.read_offset < len(t.src){
+		t.offset = t.read_offset
+
+		r, w := utf8.decode_rune_in_string(t.src[t.read_offset:])
+		t.read_offset += w
 		t.ch = r
 	}else{
 		t.ch = -1
