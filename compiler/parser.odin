@@ -8,6 +8,7 @@ import "core:fmt"
 		Ast_Statement
 			Ast_If_Statement
 			Ast_Block_Statement
+			Ast_Assignement_Statement
 		Ast_Expression
 			Ast_Number_Expression
 			Ast_Symbol_Expression
@@ -114,8 +115,7 @@ parse :: proc(content: string, file_path: string) -> ^Ast {
 }
 
 parse_proc :: proc(p: ^Parser) -> Ast_Procedure{
-
-	ast_procedure : Ast_Procedure
+	ast_procedure: Ast_Procedure
 
 	ast_procedure.type_identifier = parser_eat(p, .Identifier)
 	ast_procedure.name = parser_eat(p, .Identifier)
@@ -157,6 +157,8 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 
 	expr := parse_expression(p)
 	if p.lookahead.kind == .Equal {
+		fmt.println("Detected assignement")
+
 		parser_eat(p, .Equal)
 		right := parse_expression(p)
 		n, _ := new(Ast_Assignement_Statement)
