@@ -19,6 +19,6 @@ main :: proc(){
 	parse(stringData, file_path)
 }
 
-print_token := proc(token: Token){
+print_token :: proc(token: Token){
 	fmt.printfln("%v: %v", token.kind, token.text)
 }

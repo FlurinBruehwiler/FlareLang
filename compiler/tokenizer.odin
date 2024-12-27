@@ -157,6 +157,15 @@ scan :: proc(t: ^Tokenizer) -> Token{
 	if is_letter(ch) {
 		lit := scan_identifier(t)
 		kind = .Identifier
+		check_keyword: if len(lit) > 1 {
+			for i in Token_Kind.Keyword_Begin ..= Token_Kind.Keyword_End {
+				if lit == tokens[i] {
+					kind = Token_Kind(i)
+					break check_keyword
+				}
+			}
+			break check_keyword
+		}
 	}else if ch >= '0' && ch <= '9'{
 		lit = scan_number(t)
 		kind = .Number
