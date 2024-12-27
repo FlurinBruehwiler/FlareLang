@@ -5,14 +5,14 @@
 			"path": ".",
 		},
 		{
-			"path": "C:\\Programming\\Github\\Odin\\core"
+			"path": "/home/flurin/odin/core"
 		},
 	],
 	"build_systems":
 	[
 		{
 			"name": "sublime_odin_template",
-			"cmd": "odin run .",
+			"cmd": "odin run ./compiler",
 			"file_regex": "^(.+)\\(([0-9]+):([0-9]+)\\) (.+)$",
 		}
 	],
