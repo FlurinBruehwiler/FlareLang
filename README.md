@@ -21,10 +21,10 @@ Should use a byte code vm to execute the code semi fast.
 During runtime you should be able to run user suplied code with the interpreter (e.g. plugins), in a isolated and safe environment.
 
 **Compiler**:
-Should use XYZ as the backend, and produce stand alone native executables. The compiler should also be able to output wasm.
+Should use QBE as the backend, and produce stand alone native executables. It would also be nice to write a wasm compiler.
 
 
-CLI:
+**CLI**:
 
 `flare run main.fl` 
 runs the application in interpreted mode
@@ -41,9 +41,11 @@ runs the application in interpreted mode and then watches for file system change
 `flare reload`
 hot reloads the last instance of `flare run`
 
-Debugger:
+**Debugger**:
 The debugger uses a custom protocol and is only available for when the app runs in interpreted mode.
 While debugging, you should be able to execute arbitrary code, inspect the state of the app.
 GOAL: time traveling debugger, I should be able to step back in time. But not an unlimited amount of time.
+
+Given the state of memory, you can theoretically run a program backwards???? 
 
 There should be an Editor/IDE/Debugger for this language.

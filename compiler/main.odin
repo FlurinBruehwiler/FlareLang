@@ -3,7 +3,6 @@ package compiler
 import "core:fmt"
 import "core:os"
 import "core:unicode"
-import "core:unicode/utf8"
 
 main :: proc(){
 

@@ -15,14 +15,11 @@ import "core:fmt"
 			Ast_Binary_Expression
 */
 
-Ast :: struct {
-}
-
 Ast_Procedure :: struct {
 	type_identifier: Token,
 	name: Token,
-	parameters: []Ast_Parameter,
-	body: ^Ast_Statement
+	parameters: []^Ast_Parameter,
+	body: Ast_Statement
 }
 
 Ast_Parameter :: struct {
@@ -30,55 +27,68 @@ Ast_Parameter :: struct {
 	name: Token
 }
 
-Ast_Node :: struct {
-	pos_start: Pos,
-	pos_end: Pos
+Ast_Node :: union {
+	//other unions
+	Ast_Statement,
+	Ast_Expression,
+	
+	^Ast_Procedure,
+	^Ast_Parameter,
+
+	//Statements
+	^Ast_If_Statement,
+	^Ast_Assignement_Statement,
+	^Ast_Block_Statement,
+
+	//Expressions
+	^Ast_Number_Expression,
+	^Ast_Identifier_Expression,
+	^Ast_Binary_Expression,
+	^Ast_Literal_Expression
 }
 
-Ast_Statement :: struct {
-	statement_base: Ast_Node
+Ast_Statement :: union {
+	^Ast_If_Statement,
+	^Ast_Assignement_Statement,
+	^Ast_Block_Statement
 }
 
 Ast_If_Statement :: struct {
-	using if_statement_base: Ast_Statement,
-	condition: ^Ast_Expression,
-	body: ^Ast_Statement
+	condition: Ast_Expression,
+	body: Ast_Statement
 }
 
 Ast_Assignement_Statement :: struct {
-	using assignement_statement_base: Ast_Statement,
-	left: ^Ast_Expression,
-	right: ^Ast_Expression
+	left: Ast_Expression,
+	right: Ast_Expression
 }
 
 Ast_Block_Statement :: struct {
-	using block_statement_base: Ast_Statement,
 	statements: []Ast_Statement
 }
 
-Ast_Expression :: struct {
-	using expression_base: Ast_Node
+Ast_Expression :: union {
+	^Ast_Number_Expression,
+	^Ast_Identifier_Expression,
+	^Ast_Binary_Expression,
+	^Ast_Literal_Expression
 }
 
 Ast_Number_Expression :: struct {
-	using number_expression_base : Ast_Expression,
 	value: int
 }
 
 Ast_Identifier_Expression :: struct {
-	using number_expression_base : Ast_Expression,
 	identifier: string
 }
 
 Ast_Binary_Expression :: struct {
-	using number_expression_base: Ast_Expression,
-	left: ^Ast_Expression,
+	left: Ast_Expression,
 	operator: Token,
-	right: ^Ast_Expression
+	right: Ast_Expression
 }
 
 Ast_Literal_Expression :: struct {
-	using literal_expression_base: Ast_Expression,
 	literal: Token
 }
 
@@ -87,9 +97,41 @@ Parser :: struct {
 	lookahead: Token
 }
 
-parse :: proc(content: string, file_path: string) -> ^Ast {
-	fmt.println("Start Parsing")
+Visitor :: struct {
+	visit: proc(visitor: ^Visitor, node: ^Ast_Node) -> ^Visitor,
+	data:  rawptr,
+}
 
+walk :: proc(v: ^Visitor, node: Ast_Node) {
+	switch n in node {
+		case ^Ast_Procedure:
+			for p in n.parameters{
+				walk(v, p)
+			}
+			walk(v, n.body)
+		case ^Ast_Parameter:
+		case ^Ast_If_Statement:
+			walk(v, n.condition)
+			walk(v, n.body)
+		case ^Ast_Assignement_Statement:
+			walk(v, n.left)
+			walk(v, n.right)
+		case ^Ast_Block_Statement:
+			for statement in n.statements {
+				walk(v, statement)
+			}
+		case ^Ast_Binary_Expression:
+			walk(v, n.left)
+			walk(v, n.right)
+		case Ast_Statement: 
+		case Ast_Expression: 
+		case ^Ast_Number_Expression:
+		case ^Ast_Identifier_Expression:
+		case ^Ast_Literal_Expression:	
+	}
+}
+
+parse :: proc(content: string, file_path: string) -> ^Ast_Procedure {
 	tokenizer := create_tokenizer(content, file_path)
 
 /*
@@ -107,22 +149,18 @@ parse :: proc(content: string, file_path: string) -> ^Ast {
 	parser.tokenizer = tokenizer
 	advance_token(&parser)
 
-	parse_proc(&parser)
-
-	fmt.println("End parsing")
-
-	return nil
+	return parse_proc(&parser)
 }
 
-parse_proc :: proc(p: ^Parser) -> Ast_Procedure{
-	ast_procedure: Ast_Procedure
+parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
+	ast_procedure, n := new(Ast_Procedure)
 
 	ast_procedure.type_identifier = parser_eat(p, .Identifier)
 	ast_procedure.name = parser_eat(p, .Identifier)
 
 	parser_eat(p, .Open_Parenthesis)
 
-	parameters : [dynamic]Ast_Parameter
+	parameters : [dynamic]^Ast_Parameter
 
 	//parameters
 	for {
@@ -130,7 +168,7 @@ parse_proc :: proc(p: ^Parser) -> Ast_Procedure{
 			break
 		}
 
-		parameter : Ast_Parameter
+		parameter, _ := new(Ast_Parameter) 
 
 		parameter.type_identifier = parser_eat(p, .Identifier)
 		parameter.name = parser_eat(p, .Identifier)
@@ -157,7 +195,6 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 
 	expr := parse_expression(p)
 	if p.lookahead.kind == .Equal {
-		fmt.println("Detected assignement")
 
 		parser_eat(p, .Equal)
 		right := parse_expression(p)
@@ -167,30 +204,30 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 		return n
 	}
 
-	return Ast_Statement {
-
+	if p.lookahead.kind == .Semicolon {
+		parser_eat(p, .Semicolon)
 	}
+
+	return nil
 }
 
-parse_if_statement :: proc(p: ^Parser) -> Ast_If_Statement {
-	fmt.println("if start")
+parse_if_statement :: proc(p: ^Parser) -> ^Ast_If_Statement {
 
 	parser_eat(p, .If)
 	parser_eat(p, .Open_Parenthesis)
 	condition := parse_expression(p)
 	parser_eat(p, .Close_Parenthesis)
+
 	body := parse_block_statement(p)
 
-	fmt.println("if end")
+	statement := new(Ast_If_Statement)
+	statement.condition = condition
+	statement.body = body
 
-	return Ast_If_Statement {
-		condition = condition,
-		body = body
-	}
+	return statement
 }
 
 parse_block_statement :: proc(p: ^Parser) -> ^Ast_Block_Statement {
-	fmt.println("block start")
 	parser_eat(p, .Open_Brace)
 
 	statements : [dynamic]Ast_Statement
@@ -204,7 +241,6 @@ parse_block_statement :: proc(p: ^Parser) -> ^Ast_Block_Statement {
 	}
 
 	parser_eat(p, .Close_Brace)
-	fmt.println("block end")
 
 	statement := new(Ast_Block_Statement)
 	statement.statements = statements[:]
@@ -212,24 +248,39 @@ parse_block_statement :: proc(p: ^Parser) -> ^Ast_Block_Statement {
 	return statement
 }
 
-parse_expression :: proc(p: ^Parser) -> ^Ast_Expression {
-	return parse_binary_expression(p, 1)
+parse_expression :: proc(p: ^Parser) -> Ast_Expression {
+	return parse_binary_expression(p)
 }
 
-parse_binary_expression :: proc(p: ^Parser, prec: int) -> ^Ast_Expression {
+parse_binary_expression :: proc(p: ^Parser) -> Ast_Expression {
 	expression := parse_unary_expression(p)
-	op := p.lookahead
-	parser_eat(p, op.kind)
-	right := parse_binary_expression(p, prec + 1)
 
-	n, _ := new(Ast_Binary_Expression)
-	n.left = expression
-	n.operator = op
-	n.right = right
-	return n
+	//fmt.printfln("The precedence of %v is %v", p.lookahead.kind, prec)
+	for {
+		prec := token_precedence(p, p.lookahead.kind)
+
+		if prec == 0 {
+			return expression
+		}
+
+		op := p.lookahead
+		parser_eat(p, op.kind)
+
+		right := parse_unary_expression(p)
+
+		n, _ := new(Ast_Binary_Expression)
+		n.left = expression
+		n.operator = op
+		n.right = right
+
+		expression = n
+	}
+
+	
+	return expression
 }
 
-parse_unary_expression :: proc(p: ^Parser) -> ^Ast_Expression {
+parse_unary_expression :: proc(p: ^Parser) -> Ast_Expression {
 	#partial switch p.lookahead.kind {
 		case .Number:
 			n, _ := new(Ast_Literal_Expression)
@@ -240,6 +291,7 @@ parse_unary_expression :: proc(p: ^Parser) -> ^Ast_Expression {
 			n.identifier = parser_eat(p, .Identifier).text
 			return n
 	}
+	fmt.printfln("Unexpected token %v, is not a valid unary expression", p.lookahead.kind)
 	assert(false)
 	return nil
 }

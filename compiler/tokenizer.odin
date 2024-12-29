@@ -170,13 +170,15 @@ scan :: proc(t: ^Tokenizer) -> Token{
 		lit = scan_number(t)
 		kind = .Number
 	}else{
+		last := ch
 		advance_rune(t)
-		switch ch {
+		ch = t.ch
+		switch last {
 			case -1:
 				kind = .EOF
 			case '+':
 				kind = .Add
-				if ch == '=' {
+				if t.ch == '=' {
 					advance_rune(t)
 					kind = .Add_Equal
 				}else if ch == '+'{
