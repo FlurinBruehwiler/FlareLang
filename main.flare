@@ -1,5 +1,5 @@
 int Test(int j){
 	if(i < 1){
-		j = j + 1;
+		j = j + 2;
 	}
 }

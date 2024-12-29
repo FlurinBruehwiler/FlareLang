@@ -15,7 +15,8 @@ main :: proc(){
 
 	stringData := string(data)
 
-	parse(stringData, file_path)
+	node := parse(stringData, file_path)
+	print(node)
 }
 
 print_token :: proc(token: Token){

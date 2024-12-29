@@ -98,11 +98,27 @@ Parser :: struct {
 }
 
 Visitor :: struct {
-	visit: proc(visitor: ^Visitor, node: ^Ast_Node) -> ^Visitor,
+	visit: proc(visitor: ^Visitor, node: Ast_Node) -> ^Visitor,
 	data:  rawptr,
 }
 
+print :: proc(node: Ast_Node){
+	visitor := Visitor {
+		visit = print_visit
+	}
+
+	walk(&visitor, node)
+}
+
+print_visit :: proc(visitor: ^Visitor, node: Ast_Node) -> ^Visitor {
+	fmt.printfln("%v", node)
+
+	return visitor
+}
+
 walk :: proc(v: ^Visitor, node: Ast_Node) {
+	v->visit(node);
+
 	switch n in node {
 		case ^Ast_Procedure:
 			for p in n.parameters{
@@ -110,25 +126,39 @@ walk :: proc(v: ^Visitor, node: Ast_Node) {
 			}
 			walk(v, n.body)
 		case ^Ast_Parameter:
-		case ^Ast_If_Statement:
-			walk(v, n.condition)
-			walk(v, n.body)
-		case ^Ast_Assignement_Statement:
-			walk(v, n.left)
-			walk(v, n.right)
-		case ^Ast_Block_Statement:
-			for statement in n.statements {
-				walk(v, statement)
+		case Ast_Statement:
+			switch s in n{
+				case ^Ast_If_Statement:
+					walk(v, s.condition)
+					walk(v, s.body)
+				case ^Ast_Assignement_Statement:
+					walk(v, s.left)
+					walk(v, s.right)
+				case ^Ast_Block_Statement:
+					for statement in s.statements {
+						walk(v, statement)
+					}						
+			}
+		case Ast_Expression: 
+			switch e in n{
+				case ^Ast_Binary_Expression:
+					walk(v, e.left)
+					walk(v, e.right)
+				case ^Ast_Number_Expression:
+				case ^Ast_Identifier_Expression:
+				case ^Ast_Literal_Expression:
 			}
 		case ^Ast_Binary_Expression:
-			walk(v, n.left)
-			walk(v, n.right)
-		case Ast_Statement: 
-		case Ast_Expression: 
-		case ^Ast_Number_Expression:
-		case ^Ast_Identifier_Expression:
-		case ^Ast_Literal_Expression:	
+		case ^Ast_If_Statement: 
+		case ^Ast_Assignement_Statement: 
+		case ^Ast_Block_Statement: 
+		case ^Ast_Number_Expression: 
+		case ^Ast_Identifier_Expression: 
+		case ^Ast_Literal_Expression:
+		case:
+			fmt.printfln("%v doesn't match anything")
 	}
+
 }
 
 parse :: proc(content: string, file_path: string) -> ^Ast_Procedure {
@@ -187,7 +217,6 @@ parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
 
 parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 
-	fmt.printfln("%v", p.lookahead.kind)
 	#partial switch p.lookahead.kind {
 		case .If:
 			return parse_if_statement(p)
@@ -313,7 +342,7 @@ parser_eat :: proc(p: ^Parser, kind: Token_Kind) -> Token{
 		fmt.printfln("Unexpected token %v, expected %v", p.lookahead.kind, kind)
 		assert(false)
 	}else{
-		fmt.printfln("Eating token %v", kind)
+		//fmt.printfln("Eating token %v", kind)
 		assert(kind != .EOF)
 	}
 	prev := p.lookahead
