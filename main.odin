@@ -11,9 +11,11 @@ main :: proc(){
 
 test_asm :: proc(){
 	code := `
-	RETURN
-	ADD 1, 2
-	SUBTRACT 42, 11
+	PUSH 1
+	PUSH 2
+	ADD
+	PUSH 3
+	SUBTRACT
 	`
 
 	bin := assemble(code)

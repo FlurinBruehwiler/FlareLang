@@ -7,7 +7,7 @@ import "core:strconv"
 import "core:mem"
 
 OpCode :: enum u8 {
-	Return = 1,
+	Push = 1,
 	Add = 2,
 	Subtract = 3
 }
@@ -23,20 +23,13 @@ assemble :: proc(code: string) -> []u8 {
 		parts := strings.split_n(strings.trim_space(i), " ", 2)
 
 		switch parts[0] {
-			case "RETURN":
-				append(&output, u8(OpCode.Return))
+			case "PUSH":
+				append(&output, u8(OpCode.Push))
+				add_bytes_from_string(&output, parts[1])
 			case "ADD":
 				append(&output, u8(OpCode.Add))
-				operands := strings.split_n(parts[1], ",", 2)
-
-				add_bytes_from_string(&output, operands[0])
-				add_bytes_from_string(&output, operands[1])
 			case "SUBTRACT":
 				append(&output, u8(OpCode.Subtract))
-				operands := strings.split_n(parts[1], ",", 2)
-
-				add_bytes_from_string(&output, operands[0])
-				add_bytes_from_string(&output, operands[1])
 		}
 	}
 
@@ -78,27 +71,18 @@ disassembleInstruction :: proc(code: []u8, offset: int, builder: ^strings.Builde
 	ins := OpCode(code[offset])
 
 	switch ins {
-		case .Return:
-			strings.write_string(builder, "RETRUN\n")
-			return 1
+		case .Push:
+			strings.write_string(builder, "PUSH ")
+			write_integer(builder, code[offset + 1:])
+			strings.write_string(builder, "\n")
+
+			return 1 + 4
 		case .Add:
-			strings.write_string(builder, "ADD ")
-			
-			write_integer(builder, code[offset + 1:])
-			strings.write_string(builder, ", ")
-			write_integer(builder, code[offset + 1 + 4:])
-			strings.write_string(builder, "\n")
-
-			return 1 + 4 + 4
+			strings.write_string(builder, "ADD\n")
+			return 1
 		case .Subtract:
-			strings.write_string(builder, "SUBTRACT ")
-
-			write_integer(builder, code[offset + 1:])
-			strings.write_string(builder, ", ")
-			write_integer(builder, code[offset + 1 + 4:])
-			strings.write_string(builder, "\n")
-
-			return 1 + 4 + 4
+			strings.write_string(builder, "SUBTRACT\n")
+			return 1
 		case:
 			fmt.printfln("Invalid instruction!!! %v", ins)
 			return 0
