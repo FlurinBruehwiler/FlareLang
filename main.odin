@@ -16,14 +16,27 @@ test_asm :: proc(){
 	ADD
 	PUSH 3
 	SUBTRACT
+	CALL 8
+	PUSH 69
+	PUSH 420
+	PUSH 14
+	PUSH 10
+	ADD
+	RETURN
 	`
 
 	bin := assemble(code)
 	fmt.printfln("Binary:\n%v", bin)
 
+	vm := create_vm_from_block(Block {
+		code = bin,
+		data = nil
+	})
 
-	disasm := disassemble(bin)
-	fmt.printfln("Text:\n%v", disasm)
+	execute(vm)
+
+	//disasm := disassemble(bin)
+	//fmt.printfln("Text:\n%v", disasm)
 }
 
 test_ast :: proc(){
