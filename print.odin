@@ -1,6 +1,7 @@
 package compiler
 
 import "core:fmt"
+import "core:strings"
 
 
 print :: proc(node: Ast_Node){
@@ -8,11 +9,11 @@ print :: proc(node: Ast_Node){
 		visit = print_visit
 	}
 
-	walk(&visitor, node)
+	walk(&visitor, node, 0)
 }
 
-print_visit :: proc(visitor: ^Visitor, node: Ast_Node) -> ^Visitor {
-	fmt.printfln("%v", node)
+print_visit :: proc(visitor: ^Visitor, node: Ast_Node, nesting: int) -> ^Visitor {
+	fmt.printfln("%v%v", strings.repeat(" ", nesting * 4), node)
 
 	return visitor
 }

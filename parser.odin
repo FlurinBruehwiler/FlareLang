@@ -2,7 +2,7 @@ package compiler
 
 import "core:fmt"
 
-parse :: proc(content: string, file_path: string) -> ^Ast_Procedure {
+parse :: proc(content: string, file_path: string) -> Ast_Expression {
 	tokenizer := create_tokenizer(content, file_path)
 
 /*
@@ -20,7 +20,7 @@ parse :: proc(content: string, file_path: string) -> ^Ast_Procedure {
 	parser.tokenizer = tokenizer
 	advance_token(&parser)
 
-	return parse_proc(&parser)
+	return parse_expression(&parser)
 }
 
 parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
@@ -119,24 +119,27 @@ parse_block_statement :: proc(p: ^Parser) -> ^Ast_Block_Statement {
 }
 
 parse_expression :: proc(p: ^Parser) -> Ast_Expression {
-	return parse_binary_expression(p)
+	return parse_binary_expression(p, -999)
 }
 
-parse_binary_expression :: proc(p: ^Parser) -> Ast_Expression {
+parse_binary_expression :: proc(p: ^Parser, prev_prec: int) -> Ast_Expression {
 	expression := parse_unary_expression(p)
 
-	//fmt.printfln("The precedence of %v is %v", p.lookahead.kind, prec)
 	for {
+		if p.lookahead.kind == .EOF || p.lookahead.kind == .Close_Parenthesis{
+			return expression
+		}
+
 		prec := token_precedence(p, p.lookahead.kind)
 
-		if prec == 0 {
+		if prec <= prev_prec {
 			return expression
 		}
 
 		op := p.lookahead
 		parser_eat(p, op.kind)
 
-		right := parse_unary_expression(p)
+		right := parse_binary_expression(p, prec)
 
 		n, _ := new(Ast_Binary_Expression)
 		n.left = expression
@@ -159,6 +162,16 @@ parse_unary_expression :: proc(p: ^Parser) -> Ast_Expression {
 		case .Identifier:
 			n, _ := new(Ast_Identifier_Expression)
 			n.identifier = parser_eat(p, .Identifier).text
+			return n
+		case .Open_Parenthesis:
+
+			parser_eat(p, .Open_Parenthesis)
+
+			n, _ := new(Ast_Parenthesis_Expression)
+			n.expression = parse_expression(p) 
+
+			parser_eat(p, .Close_Parenthesis)
+
 			return n
 	}
 	fmt.printfln("Unexpected token %v, is not a valid unary expression", p.lookahead.kind)

@@ -71,7 +71,17 @@ Ast_Expression :: union {
 	^Ast_Number_Expression,
 	^Ast_Identifier_Expression,
 	^Ast_Binary_Expression,
-	^Ast_Literal_Expression
+	^Ast_Literal_Expression,
+	^Ast_Negate_Expression,
+	^Ast_Parenthesis_Expression
+}
+
+Ast_Negate_Expression :: struct {
+	expression: Ast_Expression
+}
+
+Ast_Parenthesis_Expression :: struct {
+	expression: Ast_Expression
 }
 
 Ast_Number_Expression :: struct {
@@ -98,42 +108,48 @@ Parser :: struct {
 }
 
 Visitor :: struct {
-	visit: proc(visitor: ^Visitor, node: Ast_Node) -> ^Visitor,
+	visit: proc(visitor: ^Visitor, node: Ast_Node, nesting: int) -> ^Visitor,
 	data:  rawptr,
 }
 
 
-walk :: proc(v: ^Visitor, node: Ast_Node) {
-	v->visit(node);
+walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
+	v->visit(node, nesting);
+
+	nesting := nesting + 1
 
 	switch n in node {
 		case ^Ast_Procedure:
 			for p in n.parameters{
-				walk(v, p)
+				walk(v, p, nesting)
 			}
-			walk(v, n.body)
+			walk(v, n.body, nesting)
 		case ^Ast_Parameter:
 		case Ast_Statement:
 			switch s in n{
 				case ^Ast_If_Statement:
-					walk(v, s.condition)
-					walk(v, s.body)
+					walk(v, s.condition, nesting)
+					walk(v, s.body, nesting)
 				case ^Ast_Assignement_Statement:
-					walk(v, s.left)
-					walk(v, s.right)
+					walk(v, s.left, nesting)
+					walk(v, s.right, nesting)
 				case ^Ast_Block_Statement:
 					for statement in s.statements {
-						walk(v, statement)
+						walk(v, statement, nesting)
 					}						
 			}
 		case Ast_Expression: 
 			switch e in n{
 				case ^Ast_Binary_Expression:
-					walk(v, e.left)
-					walk(v, e.right)
+					walk(v, e.left, nesting)
+					walk(v, e.right, nesting)
 				case ^Ast_Number_Expression:
 				case ^Ast_Identifier_Expression:
 				case ^Ast_Literal_Expression:
+				case ^Ast_Parenthesis_Expression:
+					walk(v, e.expression, nesting)
+				case ^Ast_Negate_Expression:
+					walk(v, e.expression, nesting)
 			}
 		case ^Ast_Binary_Expression:
 		case ^Ast_If_Statement: 

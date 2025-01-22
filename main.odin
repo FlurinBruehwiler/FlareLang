@@ -6,7 +6,10 @@ import "core:unicode"
 
 main :: proc(){
 
-	test_asm()
+	code := "5*4+1*(2+3)"
+
+	ast := parse(code, "example.fl")
+	print(ast)
 }
 
 test_asm :: proc(){
