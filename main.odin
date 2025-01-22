@@ -6,35 +6,41 @@ import "core:unicode"
 
 main :: proc(){
 
-	code := "5*4+1*(2+3)"
+	code := "1+2*3"
 
 	ast := parse(code, "example.fl")
 	print(ast)
+
+	block_builder := make_block_builder()
+
+	compile_expression(block_builder, ast)
+
+	block := block_build(block_builder)
+
+	disasm := disassemble(block.code)
+	fmt.println(disasm)
+
+	vm := create_vm_from_block(block)
+	execute(vm)
 }
 
 test_asm :: proc(){
 	code := `
 	PUSH 1
 	PUSH 2
-	ADD
 	PUSH 3
-	SUBTRACT
-	CALL 8
-	PUSH 69
-	PUSH 420
-	PUSH 14
-	PUSH 10
+	MULTIPLY
 	ADD
-	RETURN
 	`
 
 	bin := assemble(code)
 	fmt.printfln("Binary:\n%v", bin)
 
-	vm := create_vm_from_block(Block {
+	block := Block {
 		code = bin,
 		data = nil
-	})
+	}
+	vm := create_vm_from_block(&block)
 
 	execute(vm)
 

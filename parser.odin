@@ -1,6 +1,7 @@
 package compiler
 
 import "core:fmt"
+import "core:strconv"
 
 parse :: proc(content: string, file_path: string) -> Ast_Expression {
 	tokenizer := create_tokenizer(content, file_path)
@@ -156,8 +157,8 @@ parse_binary_expression :: proc(p: ^Parser, prev_prec: int) -> Ast_Expression {
 parse_unary_expression :: proc(p: ^Parser) -> Ast_Expression {
 	#partial switch p.lookahead.kind {
 		case .Number:
-			n, _ := new(Ast_Literal_Expression)
-			n.literal = parser_eat(p, .Number)
+			n, _ := new(Ast_Number_Expression)
+			n.value = i32(strconv.atoi(parser_eat(p, .Number).text))
 			return n
 		case .Identifier:
 			n, _ := new(Ast_Identifier_Expression)

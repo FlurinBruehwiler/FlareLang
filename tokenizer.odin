@@ -287,7 +287,7 @@ offset_to_pos :: proc(t: ^Tokenizer) -> Pos{
 }
 
 advance_rune :: proc(t: ^Tokenizer){
-	if t.read_offset < len(t.src){
+	if t.read_offset <= len(t.src){
 		t.offset = t.read_offset
 
 		r, w := utf8.decode_rune_in_string(t.src[t.read_offset:])

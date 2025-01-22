@@ -85,7 +85,7 @@ Ast_Parenthesis_Expression :: struct {
 }
 
 Ast_Number_Expression :: struct {
-	value: int
+	value: i32
 }
 
 Ast_Identifier_Expression :: struct {

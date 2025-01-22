@@ -11,13 +11,13 @@ Block :: struct {
 
 //vm runtime info
 VM :: struct {
-	block: Block,
+	block: ^Block,
 	ip: int,
 	stack: []i32,
 	stack_top: int
 }
 
-create_vm_from_block :: proc(block: Block) -> ^VM{
+create_vm_from_block :: proc(block: ^Block) -> ^VM{
 	vm, _ := new(VM)
 	vm.stack = make([]i32, 250)
 	vm.block = block
@@ -25,8 +25,7 @@ create_vm_from_block :: proc(block: Block) -> ^VM{
 }
 
 execute :: proc(vm: ^VM){
-	for {
-
+	for vm.ip < len(vm.block.code) {
 		//todo(fbr): only print while debugging -- add comp time if
 		fmt.println("----------------")
 		print_instruction(vm.block.code, vm.ip)

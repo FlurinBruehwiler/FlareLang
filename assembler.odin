@@ -19,6 +19,39 @@ OpCode :: enum u8 {
 	Get_Local
 }
 
+Block_Builder :: struct {
+	code: [dynamic]u8,
+	data: [dynamic]u8
+}
+
+make_block_builder :: proc() -> ^Block_Builder{
+	n, _ := new(Block_Builder)
+	n.code = make([dynamic]u8)
+	n.data = make([dynamic]u8)
+	return n
+}
+
+block_add_push :: proc(b: ^Block_Builder, num: i32){
+	append(&b.code, u8(OpCode.Push))
+	append(&b.code, ..mem.any_to_bytes(num))
+}
+
+block_add_add :: proc(b: ^Block_Builder){
+	append(&b.code, u8(OpCode.Add))
+}
+
+block_add_multiply :: proc(b: ^Block_Builder){
+	append(&b.code, u8(OpCode.Multiply))
+}
+
+block_build :: proc(b: ^Block_Builder) -> ^Block{
+	n, _ := new(Block)
+	n.code = b.code[:]
+	n.data = b.data[:]
+	return n
+}
+
+
 //takes byte code as textual representation and converts it to binary
 assemble :: proc(code: string) -> []u8 {
 	instructions := strings.split_lines(code)
@@ -125,10 +158,10 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			strings.write_string(builder, "SUBTRACT\n")
 			return 1
 		case .Divide:
-			strings.write_string(builder, "SUBTRACT\n")
+			strings.write_string(builder, "DIVIDE\n")
 			return 1
 		case .Multiply:
-			strings.write_string(builder, "SUBTRACT\n")
+			strings.write_string(builder, "MULTIPLY\n")
 			return 1
 		case .Call:
 			strings.write_string(builder, "CALL ")
