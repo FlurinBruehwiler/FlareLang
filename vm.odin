@@ -27,8 +27,8 @@ create_vm_from_block :: proc(block: ^Block) -> ^VM{
 execute :: proc(vm: ^VM){
 	for vm.ip < len(vm.block.code) {
 		//todo(fbr): only print while debugging -- add comp time if
-		fmt.println("----------------")
-		print_instruction(vm.block.code, vm.ip)
+		//fmt.println("----------------")
+		//print_instruction(vm.block.code, vm.ip)
 
 		switch OpCode(read_byte(vm)){
 			case .Push:
@@ -55,9 +55,9 @@ execute :: proc(vm: ^VM){
 				slot := read_i16(vm)
 				push(vm, vm.stack[slot])
 		}
-
-		print_stack(vm)
 	}
+
+	print_stack(vm)
 }
 
 push :: #force_inline proc (vm: ^VM, value: i32){

@@ -3,7 +3,7 @@ package compiler
 import "core:fmt"
 import "core:strconv"
 
-parse :: proc(content: string, file_path: string) -> Ast_Expression {
+parse :: proc(content: string, file_path: string) -> Ast_Node {
 	tokenizer := create_tokenizer(content, file_path)
 
 /*
@@ -21,7 +21,7 @@ parse :: proc(content: string, file_path: string) -> Ast_Expression {
 	parser.tokenizer = tokenizer
 	advance_token(&parser)
 
-	return parse_expression(&parser)
+	return Ast_Statement(parse_block_statement(&parser))
 }
 
 parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
@@ -59,6 +59,8 @@ parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
 
 parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 
+	fmt.println("parse statement")
+
 	#partial switch p.lookahead.kind {
 		case .If:
 			return parse_if_statement(p)
@@ -69,21 +71,23 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 
 		parser_eat(p, .Equal)
 		right := parse_expression(p)
+		parser_eat(p, .Semicolon)
+
 		n, _ := new(Ast_Assignement_Statement)
 		n.left = expr
 		n.right = right
 		return n
 	}
 
-	if p.lookahead.kind == .Semicolon {
-		parser_eat(p, .Semicolon)
-	}
+	parser_eat(p, .Semicolon)
 
-	return nil
+	n, _ := new(Ast_Expression_Statement)
+	n.expression = expr
+
+	return n
 }
 
 parse_if_statement :: proc(p: ^Parser) -> ^Ast_If_Statement {
-
 	parser_eat(p, .If)
 	parser_eat(p, .Open_Parenthesis)
 	condition := parse_expression(p)
@@ -127,7 +131,7 @@ parse_binary_expression :: proc(p: ^Parser, prev_prec: int) -> Ast_Expression {
 	expression := parse_unary_expression(p)
 
 	for {
-		if p.lookahead.kind == .EOF || p.lookahead.kind == .Close_Parenthesis{
+		if p.lookahead.kind == .EOF || p.lookahead.kind == .Close_Parenthesis || p.lookahead.kind == .Equal || p.lookahead.kind == .Semicolon {
 			return expression
 		}
 

@@ -35,22 +35,28 @@ Ast_Node :: union {
 	^Ast_Procedure,
 	^Ast_Parameter,
 
+/*
 	//Statements
 	^Ast_If_Statement,
 	^Ast_Assignement_Statement,
 	^Ast_Block_Statement,
+	^Ast_Expression_Statement,
 
 	//Expressions
 	^Ast_Number_Expression,
 	^Ast_Identifier_Expression,
 	^Ast_Binary_Expression,
-	^Ast_Literal_Expression
+	^Ast_Literal_Expression,
+	^Ast_Negate_Expression,
+	^Ast_Parenthesis_Expression
+	*/
 }
 
 Ast_Statement :: union {
 	^Ast_If_Statement,
 	^Ast_Assignement_Statement,
-	^Ast_Block_Statement
+	^Ast_Block_Statement,
+	^Ast_Expression_Statement
 }
 
 Ast_If_Statement :: struct {
@@ -74,6 +80,10 @@ Ast_Expression :: union {
 	^Ast_Literal_Expression,
 	^Ast_Negate_Expression,
 	^Ast_Parenthesis_Expression
+}
+
+Ast_Expression_Statement :: struct {
+	expression: Ast_Expression
 }
 
 Ast_Negate_Expression :: struct {
@@ -136,7 +146,9 @@ walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
 				case ^Ast_Block_Statement:
 					for statement in s.statements {
 						walk(v, statement, nesting)
-					}						
+					}	
+		        case ^Ast_Expression_Statement:
+        			walk(v, s.expression, nesting)					
 			}
 		case Ast_Expression: 
 			switch e in n{
@@ -151,13 +163,6 @@ walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
 				case ^Ast_Negate_Expression:
 					walk(v, e.expression, nesting)
 			}
-		case ^Ast_Binary_Expression:
-		case ^Ast_If_Statement: 
-		case ^Ast_Assignement_Statement: 
-		case ^Ast_Block_Statement: 
-		case ^Ast_Number_Expression: 
-		case ^Ast_Identifier_Expression: 
-		case ^Ast_Literal_Expression:
 		case:
 			fmt.printfln("%v doesn't match anything")
 	}

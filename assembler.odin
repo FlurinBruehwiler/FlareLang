@@ -21,13 +21,18 @@ OpCode :: enum u8 {
 
 Block_Builder :: struct {
 	code: [dynamic]u8,
-	data: [dynamic]u8
+	data: [dynamic]u8,
+
+	locals: []Local,
+	localCount: int,
+	scopeDepth: int
 }
 
 make_block_builder :: proc() -> ^Block_Builder{
 	n, _ := new(Block_Builder)
 	n.code = make([dynamic]u8)
 	n.data = make([dynamic]u8)
+	n.locals = make([]Local, 100)
 	return n
 }
 
@@ -42,6 +47,16 @@ block_add_add :: proc(b: ^Block_Builder){
 
 block_add_multiply :: proc(b: ^Block_Builder){
 	append(&b.code, u8(OpCode.Multiply))
+}
+
+block_add_setlocal :: proc(b: ^Block_Builder, localIndex: i16){
+	append(&b.code, u8(OpCode.Set_Local))
+	append(&b.code, ..mem.any_to_bytes(localIndex))
+}
+
+block_get_getlocal :: proc(b: ^Block_Builder, localIndex: i16){
+	append(&b.code, u8(OpCode.Get_Local))
+	append(&b.code, ..mem.any_to_bytes(localIndex))
 }
 
 block_build :: proc(b: ^Block_Builder) -> ^Block{
@@ -148,7 +163,7 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 	switch ins {
 		case .Push:
 			strings.write_string(builder, "PUSH ")
-			write_integer(builder, code[offset + 1:])
+			write_i32(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 4
 		case .Add:
@@ -165,7 +180,7 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			return 1
 		case .Call:
 			strings.write_string(builder, "CALL ")
-			write_integer(builder, code[offset + 1:])
+			write_i32(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 2
 		case .Return:
@@ -176,12 +191,12 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			return 1
 		case .Get_Local:
 			strings.write_string(builder, "GETLOCAL ")
-			write_integer(builder, code[offset + 1:])
+			write_i16(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 2
 		case .Set_Local:
 			strings.write_string(builder, "SETLOCAL ")
-			write_integer(builder, code[offset + 1:])
+			write_i16(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 2
 		case:
@@ -192,7 +207,12 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 	return 0
 }
 
-write_integer :: proc(builder: ^strings.Builder, slice: []u8){
+write_i16 :: proc(builder: ^strings.Builder, slice: []u8){
+	p1 := transmute(^i16)&slice[0] 
+	strings.write_int(builder, int(p1^))
+}
+
+write_i32 :: proc(builder: ^strings.Builder, slice: []u8){
 	p1 := transmute(^i32)&slice[0] 
 	strings.write_int(builder, int(p1^))
 }
