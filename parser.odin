@@ -59,11 +59,13 @@ parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
 
 parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 
-	fmt.println("parse statement")
-
 	#partial switch p.lookahead.kind {
 		case .If:
 			return parse_if_statement(p)
+		case .Var:
+			return parse_declaration_statement(p)
+		case .Print:
+			return parse_print_statement(p)
 	}
 
 	expr := parse_expression(p)
@@ -85,6 +87,37 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 	n.expression = expr
 
 	return n
+}
+
+parse_print_statement :: proc(p: ^Parser) -> ^Ast_Procedure_Invocation {
+	parser_eat(p, .Print)
+	parser_eat(p, .Open_Parenthesis)
+	expression := parse_expression(p)
+	parser_eat(p, .Close_Parenthesis)
+	parser_eat(p, .Semicolon)
+
+	statement := new(Ast_Procedure_Invocation)
+	statement.parameter = expression
+
+	return statement
+}
+
+parse_declaration_statement :: proc(p: ^Parser) -> ^Ast_Declaration_Statement {
+	parser_eat(p, .Var)
+
+	identifier := parse_identifier(p)
+
+	parser_eat(p, .Equal)
+
+	expression := parse_expression(p)
+
+	parser_eat(p, .Semicolon)
+
+	statement := new(Ast_Declaration_Statement)
+	statement.identifier = identifier
+	statement.expression = expression
+
+	return statement
 }
 
 parse_if_statement :: proc(p: ^Parser) -> ^Ast_If_Statement {
@@ -158,6 +191,12 @@ parse_binary_expression :: proc(p: ^Parser, prev_prec: int) -> Ast_Expression {
 	return expression
 }
 
+parse_identifier :: proc(p: ^Parser) -> ^Ast_Identifier_Expression {
+	n, _ := new(Ast_Identifier_Expression)
+	n.identifier = parser_eat(p, .Identifier).text
+	return n
+}
+
 parse_unary_expression :: proc(p: ^Parser) -> Ast_Expression {
 	#partial switch p.lookahead.kind {
 		case .Number:
@@ -165,9 +204,7 @@ parse_unary_expression :: proc(p: ^Parser) -> Ast_Expression {
 			n.value = i32(strconv.atoi(parser_eat(p, .Number).text))
 			return n
 		case .Identifier:
-			n, _ := new(Ast_Identifier_Expression)
-			n.identifier = parser_eat(p, .Identifier).text
-			return n
+			return parse_identifier(p)
 		case .Open_Parenthesis:
 
 			parser_eat(p, .Open_Parenthesis)

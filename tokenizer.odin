@@ -76,6 +76,8 @@ Token_Kind :: enum {
 		Else,
 		For,
 		Return,
+		Var,
+		Print,
 	Keyword_End,
 
 	COUNT
@@ -129,6 +131,8 @@ tokens := [Token_Kind.COUNT]string {
 	"else",
 	"for",
 	"return",
+	"var",
+	"print",
 	""
 }
 

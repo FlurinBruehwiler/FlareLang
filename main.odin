@@ -15,9 +15,9 @@ main :: proc(){
 
 	code := `
 	{
-		x = (1+2)*3;
-		y = x * 2;
-		x + y;
+		var x = 1;
+		x = x + 1;
+		print(x);
 	}
 	`
 

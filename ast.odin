@@ -56,12 +56,24 @@ Ast_Statement :: union {
 	^Ast_If_Statement,
 	^Ast_Assignement_Statement,
 	^Ast_Block_Statement,
-	^Ast_Expression_Statement
+	^Ast_Expression_Statement,
+	^Ast_Declaration_Statement,
+	^Ast_Procedure_Invocation
 }
 
 Ast_If_Statement :: struct {
 	condition: Ast_Expression,
 	body: Ast_Statement
+}
+
+Ast_Declaration_Statement :: struct {
+	identifier: ^Ast_Identifier_Expression,
+	expression: Ast_Expression
+}
+
+Ast_Procedure_Invocation :: struct {
+	identifier: ^Ast_Identifier_Expression,
+	parameter: Ast_Expression
 }
 
 Ast_Assignement_Statement :: struct {
@@ -148,7 +160,11 @@ walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
 						walk(v, statement, nesting)
 					}	
 		        case ^Ast_Expression_Statement:
-        			walk(v, s.expression, nesting)					
+        			walk(v, s.expression, nesting)
+    			case ^Ast_Declaration_Statement:
+    				walk(v, s.expression, nesting)	
+				case ^Ast_Procedure_Invocation:
+					walk(v, s.parameter, nesting)		
 			}
 		case Ast_Expression: 
 			switch e in n{

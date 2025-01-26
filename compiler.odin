@@ -34,9 +34,9 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 					
 					#partial switch e.operator.kind {
 						case .Add:
-							block_add_add(b)
+							block_add_opcode(b, .Add)
 						case .Multiply:
-							block_add_multiply(b)
+							block_add_opcode(b, .Multiply)
 					}
 				case ^Ast_Number_Expression:
 					block_add_push(b, e.value)
@@ -54,8 +54,8 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 				case ^Ast_Assignement_Statement:
 					compile_node(b, s.right)
 					local_identifier := s.left.(^Ast_Identifier_Expression)
-					define_local(b, local_identifier.identifier)
-					//we don't actually need to set local, because it is already on the top of the stack :)
+					idx := resolve_local(b, local_identifier.identifier)
+					block_set_local(b, idx)
 				case ^Ast_Block_Statement:
 					for statement in s.statements {
 						compile_node(b, statement)
@@ -63,6 +63,12 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 				case ^Ast_Expression_Statement:
 					compile_node(b, s.expression)
 				case ^Ast_If_Statement:
+				case ^Ast_Declaration_Statement:
+					compile_node(b, s.expression)
+					local_identifier := s.identifier.identifier
+					define_local(b, local_identifier)
+				case ^Ast_Procedure_Invocation:
+					block_add_opcode(b, .Print)
 			}
 		case:
 			fmt.printfln("%v", typeid_of(type_of(node)))

@@ -16,7 +16,8 @@ OpCode :: enum u8 {
 	Call,
 	Return,
 	Set_Local,
-	Get_Local
+	Get_Local,
+	Print
 }
 
 Block_Builder :: struct {
@@ -41,15 +42,11 @@ block_add_push :: proc(b: ^Block_Builder, num: i32){
 	append(&b.code, ..mem.any_to_bytes(num))
 }
 
-block_add_add :: proc(b: ^Block_Builder){
-	append(&b.code, u8(OpCode.Add))
+block_add_opcode :: proc(b: ^Block_Builder, op_code: OpCode){
+	append(&b.code, u8(op_code))
 }
 
-block_add_multiply :: proc(b: ^Block_Builder){
-	append(&b.code, u8(OpCode.Multiply))
-}
-
-block_add_setlocal :: proc(b: ^Block_Builder, localIndex: i16){
+block_set_local :: proc(b: ^Block_Builder, localIndex: i16){
 	append(&b.code, u8(OpCode.Set_Local))
 	append(&b.code, ..mem.any_to_bytes(localIndex))
 }
@@ -102,6 +99,8 @@ assemble :: proc(code: string) -> []u8 {
 			case "SETLOCAL":
 				append(&output, u8(OpCode.Get_Local))
 				add_i16_from_string(&output, parts[1])
+			case "PRINT":
+				append(&output, u8(OpCode.Print))
 		}
 	}
 
@@ -199,6 +198,9 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			write_i16(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 2
+		case .Print:
+			strings.write_string(builder, "PRINT\n")
+			return 1
 		case:
 			fmt.printfln("Invalid instruction!!! %v", ins)
 			return 0

@@ -54,10 +54,13 @@ execute :: proc(vm: ^VM){
 			case .Get_Local:
 				slot := read_i16(vm)
 				push(vm, vm.stack[slot])
+			case .Print:
+				parameter := pop(vm)
+				fmt.printfln("%v", parameter)
 		}
 	}
 
-	print_stack(vm)
+	//print_stack(vm)
 }
 
 push :: #force_inline proc (vm: ^VM, value: i32){
