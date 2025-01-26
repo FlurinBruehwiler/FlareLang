@@ -20,7 +20,12 @@ OpCode :: enum u8 {
 	Print,
 	Jump_If_False,
 	Jump,
-	Compare
+	Equal,
+	Not_Equal,
+	Lesser_Than,
+	Greater_Than,
+	Lesser_Equal,
+	Greater_Equal
 }
 
 Block_Builder :: struct {
@@ -40,13 +45,18 @@ make_block_builder :: proc() -> ^Block_Builder{
 	return n
 }
 
-block_add_push :: proc(b: ^Block_Builder, num: i32){
-	append(&b.code, u8(OpCode.Push))
-	append(&b.code, ..mem.any_to_bytes(num))
-}
-
 block_add_opcode :: proc(b: ^Block_Builder, op_code: OpCode){
 	append(&b.code, u8(op_code))
+}
+
+block_add_opcode_i16 :: proc(b: ^Block_Builder, op_code: OpCode, arg: i16){
+	append(&b.code, u8(op_code))
+	append(&b.code, ..mem.any_to_bytes(arg))
+}
+
+block_add_opcode_i32 :: proc(b: ^Block_Builder, op_code: OpCode, arg: i32){
+	append(&b.code, u8(op_code))
+	append(&b.code, ..mem.any_to_bytes(arg))
 }
 
 Jump_Info :: struct {
@@ -69,16 +79,6 @@ block_add_jump :: proc(b: ^Block_Builder, op_code: OpCode) -> Jump_Info{
 
 block_set_jump_location :: proc(b: ^Block_Builder, jump_info: Jump_Info){
 	copy(b.code[jump_info.instructionLocation:], mem.any_to_bytes(i32(len(b.code) - jump_info.jumpStartLocation)))
-}
-
-block_set_local :: proc(b: ^Block_Builder, localIndex: i16){
-	append(&b.code, u8(OpCode.Set_Local))
-	append(&b.code, ..mem.any_to_bytes(localIndex))
-}
-
-block_get_getlocal :: proc(b: ^Block_Builder, localIndex: i16){
-	append(&b.code, u8(OpCode.Get_Local))
-	append(&b.code, ..mem.any_to_bytes(localIndex))
 }
 
 block_build :: proc(b: ^Block_Builder) -> ^Block{
@@ -132,8 +132,18 @@ assemble :: proc(code: string) -> []u8 {
 			case "JUMP":
 				append(&output, u8(OpCode.Jump))
 				add_i32_from_string(&output, parts[1])
-			case "COMPARE":
-				append(&output, u8(OpCode.Compare))
+			case "EQUAL":
+				append(&output, u8(OpCode.Equal))
+			case "NOTEQUAL":
+				append(&output, u8(OpCode.Not_Equal))
+			case "GREATHERTHAN":
+				append(&output, u8(OpCode.Greater_Than))
+			case "LESSERTHAN":
+				append(&output, u8(OpCode.Lesser_Than))
+			case "GREATEREQUALS":
+				append(&output, u8(OpCode.Greater_Equal))
+			case "LESSEREQUALS":
+				append(&output, u8(OpCode.Lesser_Equal))
 		}
 	}
 
@@ -244,8 +254,23 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			write_i32(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 4
-		case .Compare:
-			strings.write_string(builder, "COMPARE\n")
+		case .Equal:
+			strings.write_string(builder, "EQUAL\n")
+			return 1
+		case .Not_Equal:
+			strings.write_string(builder, "NOTEQUAL\n")
+			return 1
+		case .Greater_Equal:
+			strings.write_string(builder, "GREATHEREQUAL\n")
+			return 1
+		case .Lesser_Equal:
+			strings.write_string(builder, "LESSEREQUAL\n")
+			return 1
+		case .Greater_Than:
+			strings.write_string(builder, "GREATERTHAN\n")
+			return 1
+		case .Lesser_Than:
+			strings.write_string(builder, "LESSERTHAN\n")
 			return 1
 		case:
 			fmt.printfln("Invalid instruction!!! %v", ins)

@@ -15,16 +15,14 @@ main :: proc(){
 
 	code := `
 	{
-		var x = 1 + 2;
-		if (x == 3){
-			x = x + 100;
-		}else{
-			x = x + 50;
+		var x = 0;
+
+		for(x < 10){
+			print(x);
+			x = x + 1;
 		}
 
-		x = x + 3;
-
-		print(x);
+		print(20);
 	}
 	`
 

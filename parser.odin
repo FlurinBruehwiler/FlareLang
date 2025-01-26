@@ -66,6 +66,10 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 			return parse_declaration_statement(p)
 		case .Print:
 			return parse_print_statement(p)
+		case .For:
+			return parse_for_statement(p)
+		case .Open_Brace:
+			return parse_block_statement(p)
 	}
 
 	expr := parse_expression(p)
@@ -87,6 +91,21 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 	n.expression = expr
 
 	return n
+}
+
+parse_for_statement :: proc(p: ^Parser) -> ^Ast_For_Statement {
+	parser_eat(p, .For)
+	parser_eat(p, .Open_Parenthesis)
+	condition := parse_expression(p)
+	parser_eat(p, .Close_Parenthesis)
+
+	body := parse_statement(p)
+
+	statement := new(Ast_For_Statement)
+	statement.condition = condition
+	statement.body = body
+
+	return statement
 }
 
 parse_print_statement :: proc(p: ^Parser) -> ^Ast_Procedure_Invocation {
@@ -126,7 +145,7 @@ parse_if_statement :: proc(p: ^Parser) -> ^Ast_If_Statement {
 	condition := parse_expression(p)
 	parser_eat(p, .Close_Parenthesis)
 
-	body := parse_block_statement(p)
+	body := parse_statement(p)
 
 	statement := new(Ast_If_Statement)
 	statement.condition = condition

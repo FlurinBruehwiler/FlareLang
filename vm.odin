@@ -65,8 +65,38 @@ execute :: proc(vm: ^VM){
 				}
 			case .Jump:
 				vm.ip += int(read_i32(vm))
-			case .Compare:
+			case .Equal:
 				if pop(vm) == pop(vm){
+					push(vm, 1)
+				}else{
+					push(vm, 0)
+				}
+			case .Not_Equal:
+				if pop(vm) != pop(vm){
+					push(vm, 1)
+				}else{
+					push(vm, 0)
+				}
+			case .Greater_Than:
+				if pop(vm) > pop(vm){
+					push(vm, 1)
+				}else{
+					push(vm, 0)
+				}
+			case .Lesser_Than:
+				if pop(vm) < pop(vm){
+					push(vm, 1)
+				}else{
+					push(vm, 0)
+				}
+			case .Greater_Equal:
+				if pop(vm) >= pop(vm){
+					push(vm, 1)
+				}else{
+					push(vm, 0)
+				}
+			case .Lesser_Equal:
+				if pop(vm) <= pop(vm){
 					push(vm, 1)
 				}else{
 					push(vm, 0)
