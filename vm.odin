@@ -56,11 +56,23 @@ execute :: proc(vm: ^VM){
 				push(vm, vm.stack[slot])
 			case .Print:
 				parameter := pop(vm)
-				fmt.printfln("%v", parameter)
+				fmt.printfln("Output: %v", parameter)
+			case .Jump_If_False:
+				jumpOffset := read_i32(vm)
+				condition := pop(vm)
+				if condition == 0 {
+					vm.ip += int(jumpOffset)
+				}
+			case .Compare:
+				if pop(vm) == pop(vm){
+					push(vm, 1)
+				}else{
+					push(vm, 0)
+				}
 		}
-	}
 
-	//print_stack(vm)
+		//print_stack(vm)
+	}
 }
 
 push :: #force_inline proc (vm: ^VM, value: i32){

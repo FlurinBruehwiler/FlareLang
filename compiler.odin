@@ -1,6 +1,7 @@
 package compiler
 
 import "core:fmt"
+import "core:mem"
 
 Local :: struct {
 	name: string,
@@ -37,6 +38,10 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 							block_add_opcode(b, .Add)
 						case .Multiply:
 							block_add_opcode(b, .Multiply)
+						case .Double_Equal:
+							block_add_opcode(b, .Compare)
+						case:
+							assert(false, "Operator not supported")
 					}
 				case ^Ast_Number_Expression:
 					block_add_push(b, e.value)
@@ -63,11 +68,22 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 				case ^Ast_Expression_Statement:
 					compile_node(b, s.expression)
 				case ^Ast_If_Statement:
+					compile_node(b, s.condition)
+					append(&b.code, u8(OpCode.Jump_If_False))
+					
+					startLocation := len(b.code)
+					append(&b.code, ..mem.any_to_bytes(i32(0)))
+					startLocation2 := len(b.code)
+					
+					compile_node(b, s.body)
+					
+					copy(b.code[startLocation:], mem.any_to_bytes(i32(len(b.code) - startLocation2)))
 				case ^Ast_Declaration_Statement:
 					compile_node(b, s.expression)
 					local_identifier := s.identifier.identifier
 					define_local(b, local_identifier)
 				case ^Ast_Procedure_Invocation:
+					compile_node(b, s.parameter)
 					block_add_opcode(b, .Print)
 			}
 		case:

@@ -223,7 +223,7 @@ parse_unary_expression :: proc(p: ^Parser) -> Ast_Expression {
 
 token_precedence :: proc(p: ^Parser, kind: Token_Kind) -> int {
 	#partial switch kind {
-		case .Equal, .Not_Equal, .Greater, .Greater_Equal, .Lesser, .Lesser_Equal:
+		case .Double_Equal, .Not_Equal, .Greater, .Greater_Equal, .Lesser, .Lesser_Equal:
 			return 1
 		case .Add, .Subtract:
 			return 2

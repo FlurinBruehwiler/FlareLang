@@ -17,7 +17,9 @@ OpCode :: enum u8 {
 	Return,
 	Set_Local,
 	Get_Local,
-	Print
+	Print,
+	Jump_If_False,
+	Compare
 }
 
 Block_Builder :: struct {
@@ -101,6 +103,11 @@ assemble :: proc(code: string) -> []u8 {
 				add_i16_from_string(&output, parts[1])
 			case "PRINT":
 				append(&output, u8(OpCode.Print))
+			case "JMPIFFALSE":
+				append(&output, u8(OpCode.Jump_If_False))
+				add_i32_from_string(&output, parts[1])
+			case "COMPARE":
+				append(&output, u8(OpCode.Compare))
 		}
 	}
 
@@ -181,7 +188,7 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			strings.write_string(builder, "CALL ")
 			write_i32(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
-			return 1 + 2
+			return 1 + 4
 		case .Return:
 			strings.write_string(builder, "RETURN\n")
 			return 1
@@ -200,6 +207,14 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			return 1 + 2
 		case .Print:
 			strings.write_string(builder, "PRINT\n")
+			return 1
+		case .Jump_If_False:
+			strings.write_string(builder, "JMPIFFALSE ")
+			write_i32(builder, code[offset + 1:])
+			strings.write_string(builder, "\n")
+			return 1 + 4
+		case .Compare:
+			strings.write_string(builder, "COMPARE\n")
 			return 1
 		case:
 			fmt.printfln("Invalid instruction!!! %v", ins)
