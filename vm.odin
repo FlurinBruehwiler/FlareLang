@@ -63,6 +63,8 @@ execute :: proc(vm: ^VM){
 				if condition == 0 {
 					vm.ip += int(jumpOffset)
 				}
+			case .Jump:
+				vm.ip += int(read_i32(vm))
 			case .Compare:
 				if pop(vm) == pop(vm){
 					push(vm, 1)

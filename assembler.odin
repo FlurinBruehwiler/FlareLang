@@ -19,6 +19,7 @@ OpCode :: enum u8 {
 	Get_Local,
 	Print,
 	Jump_If_False,
+	Jump,
 	Compare
 }
 
@@ -46,6 +47,28 @@ block_add_push :: proc(b: ^Block_Builder, num: i32){
 
 block_add_opcode :: proc(b: ^Block_Builder, op_code: OpCode){
 	append(&b.code, u8(op_code))
+}
+
+Jump_Info :: struct {
+	instructionLocation: int,
+	jumpStartLocation: int
+}
+
+block_add_jump :: proc(b: ^Block_Builder, op_code: OpCode) -> Jump_Info{
+	append(&b.code, u8(op_code))
+
+	startLocation := len(b.code)
+	append(&b.code, ..mem.any_to_bytes(i32(0)))
+	startLocation2 := len(b.code)
+	
+	return Jump_Info {
+		instructionLocation = startLocation,
+		jumpStartLocation = startLocation2
+	}
+}
+
+block_set_jump_location :: proc(b: ^Block_Builder, jump_info: Jump_Info){
+	copy(b.code[jump_info.instructionLocation:], mem.any_to_bytes(i32(len(b.code) - jump_info.jumpStartLocation)))
 }
 
 block_set_local :: proc(b: ^Block_Builder, localIndex: i16){
@@ -105,6 +128,9 @@ assemble :: proc(code: string) -> []u8 {
 				append(&output, u8(OpCode.Print))
 			case "JMPIFFALSE":
 				append(&output, u8(OpCode.Jump_If_False))
+				add_i32_from_string(&output, parts[1])
+			case "JUMP":
+				append(&output, u8(OpCode.Jump))
 				add_i32_from_string(&output, parts[1])
 			case "COMPARE":
 				append(&output, u8(OpCode.Compare))
@@ -210,6 +236,11 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			return 1
 		case .Jump_If_False:
 			strings.write_string(builder, "JMPIFFALSE ")
+			write_i32(builder, code[offset + 1:])
+			strings.write_string(builder, "\n")
+			return 1 + 4
+		case .Jump:
+			strings.write_string(builder, "JUMP ")
 			write_i32(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 4

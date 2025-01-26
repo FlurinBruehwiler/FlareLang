@@ -132,6 +132,15 @@ parse_if_statement :: proc(p: ^Parser) -> ^Ast_If_Statement {
 	statement.condition = condition
 	statement.body = body
 
+	if p.lookahead.kind == .Else {
+		parser_eat(p, .Else)
+		if p.lookahead.kind == .If {
+			statement.else_statement = parse_if_statement(p)
+		}else{
+			statement.else_statement = parse_block_statement(p)
+		}
+	}
+
 	return statement
 }
 

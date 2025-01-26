@@ -63,7 +63,8 @@ Ast_Statement :: union {
 
 Ast_If_Statement :: struct {
 	condition: Ast_Expression,
-	body: Ast_Statement
+	body: Ast_Statement,
+	else_statement: Ast_Statement 
 }
 
 Ast_Declaration_Statement :: struct {

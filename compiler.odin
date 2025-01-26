@@ -69,15 +69,23 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 					compile_node(b, s.expression)
 				case ^Ast_If_Statement:
 					compile_node(b, s.condition)
-					append(&b.code, u8(OpCode.Jump_If_False))
 					
-					startLocation := len(b.code)
-					append(&b.code, ..mem.any_to_bytes(i32(0)))
-					startLocation2 := len(b.code)
+					if_jump_info := block_add_jump(b, .Jump_If_False)
 					
 					compile_node(b, s.body)
+
+					else_jump_info: Jump_Info
+					if s.else_statement != nil {
+						else_jump_info = block_add_jump(b, .Jump)
+					}
 					
-					copy(b.code[startLocation:], mem.any_to_bytes(i32(len(b.code) - startLocation2)))
+					block_set_jump_location(b, if_jump_info)
+
+					if s.else_statement != nil{
+						compile_node(b, s.else_statement)
+						block_set_jump_location(b, else_jump_info)
+					}
+
 				case ^Ast_Declaration_Statement:
 					compile_node(b, s.expression)
 					local_identifier := s.identifier.identifier

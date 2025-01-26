@@ -18,6 +18,8 @@ main :: proc(){
 		var x = 1 + 2;
 		if (x == 3){
 			x = x + 100;
+		}else{
+			x = x + 50;
 		}
 
 		x = x + 3;
