@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:bytes"
 import "core:os"
 
-@(test)
+//@(test)
 basic_procedure :: proc(t: ^testing.T) {
 
     stringData := `

@@ -107,7 +107,6 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 				case ^Ast_For_Statement:
 
 					for_start := len(b.code)
-					fmt.printfln("for_start: %v", for_start)
 
 					compile_node(b, s.condition)
 

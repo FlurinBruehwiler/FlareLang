@@ -4,20 +4,23 @@ import "core:fmt"
 import "core:os"
 import "core:unicode"
 import "base:runtime"
+import "core:log"
 import "core:debug/trace"
+import vmem "core:mem/virtual"
 
 main :: proc(){
-/*
-	trace.init(&global_trace_ctx)
-	defer trace.destroy(&global_trace_ctx)
-	context.assertion_failure_proc = debug_trace_assertion_failure_proc
-*/
+
+
+	//trace.init(&global_trace_ctx)
+	//defer trace.destroy(&global_trace_ctx)
+	//context.assertion_failure_proc = debug_trace_assertion_failure_proc
+
 
 	code := `
 	{
 		var x = 0;
 
-		for(x < 10){
+		for(x < 5){
 			print(x);
 			x = x + 1;
 		}
@@ -25,6 +28,14 @@ main :: proc(){
 		print(20);
 	}
 	`
+	arena :vmem.Arena
+	err := vmem.arena_init_growing(&arena)
+	assert(err == nil)
+	allocator := vmem.arena_allocator(&arena)
+	context.allocator = allocator
+	defer free_all()
+
+	context.logger = log.create_console_logger()
 
 	ast := parse(code, "example.fl")
 	print(ast)
@@ -43,6 +54,7 @@ main :: proc(){
 
 	vm := create_vm_from_block(block)
 	execute(vm)
+
 }
 
 test_asm :: proc(){

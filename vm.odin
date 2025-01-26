@@ -2,6 +2,7 @@ package compiler
 
 import "core:fmt"
 import "core:slice"
+import "core:log"
 
 //bytecode info
 Block :: struct {
@@ -56,7 +57,7 @@ execute :: proc(vm: ^VM){
 				push(vm, vm.stack[slot])
 			case .Print:
 				parameter := pop(vm)
-				fmt.printfln("Output: %v", parameter)
+				log.logf(.Info, "%v\n", parameter)
 			case .Jump_If_False:
 				jumpOffset := read_i32(vm)
 				condition := pop(vm)
