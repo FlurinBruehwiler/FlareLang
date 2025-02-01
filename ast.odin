@@ -94,7 +94,8 @@ Ast_Number_Expression :: struct {
 }
 
 Ast_Identifier_Expression :: struct {
-	identifier: string
+	identifier: string,
+	symbol_table_index: int //gets filled in later i guess
 }
 
 Ast_Binary_Expression :: struct {

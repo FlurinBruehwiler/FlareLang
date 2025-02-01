@@ -8,6 +8,10 @@ import "core:log"
 import "core:debug/trace"
 import vmem "core:mem/virtual"
 
+console_log :: proc(data: rawptr, level: runtime.Logger_Level, text: string, options: runtime.Logger_Options, location := #caller_location){
+	fmt.print(text)
+}
+
 main :: proc(){
 	//trace.init(&global_trace_ctx)
 	//defer trace.destroy(&global_trace_ctx)
@@ -20,11 +24,13 @@ main :: proc(){
 	context.allocator = allocator
 	defer free_all()
 
-	context.logger = log.create_console_logger()
+	context.logger.procedure = console_log
 
 	code := `
 	void Main(){
-		Print(10);
+		var x = 10;
+
+		Print(x);
 
 		Test();
 
@@ -32,7 +38,9 @@ main :: proc(){
 	}
 
 	void Test(){
-		Print(30);
+		var y = 30;
+
+		Print(y);
 	}
 	`
 

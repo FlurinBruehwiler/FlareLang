@@ -2,27 +2,31 @@ package compiler
 
 import "core:fmt"
 import "core:mem"
+import "core:slice"
 
 Local :: struct {
-	name: string,
-	depth: int
+	name: string
 }
 
 define_local :: proc(b: ^Block_Builder, name: string){
-	b.locals[b.localCount] = Local {
-		name = name,
-		depth = 0
+	b.locals[b.local_count] = Local {
+		name = name
 	}
-	b.localCount += 1
+	b.local_count += 1
 }
 
 resolve_local :: proc(b: ^Block_Builder, name: string) -> i16 {
-	for i := b.localCount - 1; i >= 0; i -= 1 {
+	for i := b.local_count - 1; i >= 0; i -= 1 {
 		if b.locals[i].name == name {
 			return i16(i)
 		}
 	}
 	return -1
+}
+
+reset_locals :: proc(b: ^Block_Builder){
+	slice.fill(b.locals, Local{})
+	b.local_count = 0
 }
 
 compile_file :: proc(b: ^Block_Builder, file: ^Ast_File) {
@@ -34,25 +38,29 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 		case ^Ast_File:
 
 			//invoke main procedure
-			procedure_invocation: Procedure_Invocation
-			procedure_invocation.name = "Main"
+			{
+				procedure_invocation: Procedure_Invocation
+				procedure_invocation.name = "Main"
 
-			block_add_opcode_i32(b, .Call, 0) //call location is getting filled in later
-			procedure_invocation.call_block_location = len(b.code) - 4
-			append(&b.procedure_invocations, procedure_invocation)
+				block_add_opcode_i32(b, .Call, 0) //call location is getting filled in later
+				procedure_invocation.call_block_location = len(b.code) - 4
+				append(&b.procedure_invocations, procedure_invocation)
+				
+				block_add_opcode(b, .Exit)
+			}
 
-			block_add_opcode(b, .Exit)
-
+			//compile procedures
 			for procedure in n.procedures {
 				compile_node(b, procedure)
 			}
+
+			//linking :)
 			for invocation in b.procedure_invocations{
 				definition := b.procedure_definitions[invocation.name]
 				block_insert_i32(b, invocation.call_block_location, definition)
 			}
 		case ^Ast_Procedure:
-			fmt.println("procedure")
-
+			reset_locals(b) //locals are per function
 			b.procedure_definitions[n.name.text] = i32(len(b.code))
 			compile_node(b, n.body)
 			block_add_opcode(b, .Return)
@@ -87,7 +95,7 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 					block_add_opcode_i32(b, .Push, e.value)
 				case ^Ast_Identifier_Expression:
 					idx := resolve_local(b, e.identifier)
-					assert(idx != -1, "Local variable not found!")
+					assert(idx != -1, fmt.tprintf("Variable %v doesn't exit", e.identifier))
 					block_add_opcode_i16(b, .Get_Local, idx)
 				case ^Ast_Literal_Expression:
 				case ^Ast_Parenthesis_Expression:

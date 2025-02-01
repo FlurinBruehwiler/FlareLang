@@ -59,10 +59,10 @@ execute :: proc(vm: ^VM){
 				pop(vm)
 			case .Set_Local:
 				slot := read_i16(vm)
-				vm.stack[slot] = pop(vm)
+				vm.stack[vm.base_pointer + int(slot)] = pop(vm)
 			case .Get_Local:
 				slot := read_i16(vm)
-				push(vm, vm.stack[slot])
+				push(vm, vm.stack[vm.base_pointer + int(slot)])
 			case .Print:
 				parameter := pop(vm)
 				log.logf(.Info, "%v\n", parameter)
