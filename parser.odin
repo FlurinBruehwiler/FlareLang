@@ -3,7 +3,7 @@ package compiler
 import "core:fmt"
 import "core:strconv"
 
-parse :: proc(content: string, file_path: string) -> Ast_Node {
+parse :: proc(content: string, file_path: string) -> ^Ast_File {
 	tokenizer := create_tokenizer(content, file_path)
 
 /*
@@ -21,7 +21,26 @@ parse :: proc(content: string, file_path: string) -> Ast_Node {
 	parser.tokenizer = tokenizer
 	advance_token(&parser)
 
-	return Ast_Statement(parse_block_statement(&parser))
+	return parse_file(&parser)
+
+	//return Ast_Statement(parse_block_statement(&parser))
+}
+
+parse_file :: proc(p: ^Parser) -> ^Ast_File{
+	procedures: [dynamic]^Ast_Procedure
+
+	for {
+		if p.lookahead.kind == .EOF {
+			break
+		}
+
+		append(&procedures, parse_proc(p))
+	}
+
+	n, _ := new(Ast_File)
+	n.procedures = procedures[:]
+
+	return n
 }
 
 parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
@@ -64,8 +83,6 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 			return parse_if_statement(p)
 		case .Var:
 			return parse_declaration_statement(p)
-		case .Print:
-			return parse_print_statement(p)
 		case .For:
 			return parse_for_statement(p)
 		case .Open_Brace:
@@ -108,15 +125,28 @@ parse_for_statement :: proc(p: ^Parser) -> ^Ast_For_Statement {
 	return statement
 }
 
-parse_print_statement :: proc(p: ^Parser) -> ^Ast_Procedure_Invocation {
-	parser_eat(p, .Print)
+parse_procedure_invocation_expression :: proc(p: ^Parser, identifier: ^Ast_Identifier_Expression) -> ^Ast_Procedure_Invocation_Expression {
 	parser_eat(p, .Open_Parenthesis)
-	expression := parse_expression(p)
-	parser_eat(p, .Close_Parenthesis)
-	parser_eat(p, .Semicolon)
 
-	statement := new(Ast_Procedure_Invocation)
-	statement.parameter = expression
+	parameters: [dynamic]Ast_Expression
+
+	if p.lookahead.kind != .Close_Parenthesis {
+		for {
+			append(&parameters, parse_expression(p))
+
+			if p.lookahead.kind == .Close_Parenthesis {
+				break
+			}
+
+			parser_eat(p, .Comma)
+		}
+	}
+
+	parser_eat(p, .Close_Parenthesis)
+
+	statement := new(Ast_Procedure_Invocation_Expression)
+	statement.parameters = parameters[:]
+	statement.identifier = identifier
 
 	return statement
 }
@@ -192,7 +222,7 @@ parse_binary_expression :: proc(p: ^Parser, prev_prec: int) -> Ast_Expression {
 	expression := parse_unary_expression(p)
 
 	for {
-		if p.lookahead.kind == .EOF || p.lookahead.kind == .Close_Parenthesis || p.lookahead.kind == .Equal || p.lookahead.kind == .Semicolon {
+		if p.lookahead.kind == .EOF || p.lookahead.kind == .Close_Parenthesis || p.lookahead.kind == .Equal || p.lookahead.kind == .Semicolon || p.lookahead.kind == .Comma {
 			return expression
 		}
 
@@ -232,7 +262,13 @@ parse_unary_expression :: proc(p: ^Parser) -> Ast_Expression {
 			n.value = i32(strconv.atoi(parser_eat(p, .Number).text))
 			return n
 		case .Identifier:
-			return parse_identifier(p)
+			identifier := parse_identifier(p)
+
+			if p.lookahead.kind == .Open_Parenthesis {
+				return parse_procedure_invocation_expression(p, identifier)
+			}
+
+			return identifier
 		case .Open_Parenthesis:
 
 			parser_eat(p, .Open_Parenthesis)

@@ -25,8 +25,37 @@ resolve_local :: proc(b: ^Block_Builder, name: string) -> i16 {
 	return -1
 }
 
+compile_file :: proc(b: ^Block_Builder, file: ^Ast_File) {
+	compile_node(b, file)
+}
+
 compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 	#partial switch n in node {
+		case ^Ast_File:
+
+			//invoke main procedure
+			procedure_invocation: Procedure_Invocation
+			procedure_invocation.name = "Main"
+
+			block_add_opcode_i32(b, .Call, 0) //call location is getting filled in later
+			procedure_invocation.call_block_location = len(b.code) - 4
+			append(&b.procedure_invocations, procedure_invocation)
+
+			block_add_opcode(b, .Exit)
+
+			for procedure in n.procedures {
+				compile_node(b, procedure)
+			}
+			for invocation in b.procedure_invocations{
+				definition := b.procedure_definitions[invocation.name]
+				block_insert_i32(b, invocation.call_block_location, definition)
+			}
+		case ^Ast_Procedure:
+			fmt.println("procedure")
+
+			b.procedure_definitions[n.name.text] = i32(len(b.code))
+			compile_node(b, n.body)
+			block_add_opcode(b, .Return)
 		case Ast_Expression:
 			switch e in n {
 				case ^Ast_Binary_Expression:
@@ -64,6 +93,26 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 				case ^Ast_Parenthesis_Expression:
 					compile_node(b, e.expression)
 				case ^Ast_Negate_Expression:
+				case ^Ast_Procedure_Invocation_Expression:
+					procedure_invocation: Procedure_Invocation
+					procedure_invocation.name = e.identifier.identifier
+
+					for parameter in e.parameters {
+						compile_node(b, parameter)
+					}
+
+					if e.identifier.identifier == "Print" {
+						block_add_opcode(b, .Print)
+					}else{
+						block_add_opcode_i32(b, .Call, 0) //call location is getting filled in later
+						procedure_invocation.call_block_location = len(b.code) - 4
+						append(&b.procedure_invocations, procedure_invocation)
+
+						//todo, remove parameters in a single instruction, currently this is a huge waste..
+						for parameter in e.parameters { 
+							block_add_opcode(b, .Pop)
+						}	
+					}
 			}
 		case Ast_Statement:
 			switch s in n {
@@ -101,9 +150,6 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 					compile_node(b, s.expression)
 					local_identifier := s.identifier.identifier
 					define_local(b, local_identifier)
-				case ^Ast_Procedure_Invocation:
-					compile_node(b, s.parameter)
-					block_add_opcode(b, .Print)
 				case ^Ast_For_Statement:
 
 					for_start := len(b.code)

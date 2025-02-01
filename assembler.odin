@@ -9,6 +9,7 @@ import "core:mem"
 OpCode :: enum u8 {
 	Push,
 	Pop,
+	Exit,
 	Add,
 	Subtract,
 	Divide,
@@ -34,7 +35,15 @@ Block_Builder :: struct {
 
 	locals: []Local,
 	localCount: int,
-	scopeDepth: int
+	scopeDepth: int,
+
+	procedure_definitions: map[string]i32,
+	procedure_invocations: [dynamic]Procedure_Invocation
+}
+
+Procedure_Invocation :: struct {
+	name: string,
+	call_block_location: int
 }
 
 make_block_builder :: proc() -> ^Block_Builder{
@@ -42,6 +51,10 @@ make_block_builder :: proc() -> ^Block_Builder{
 	n.code = make([dynamic]u8)
 	n.data = make([dynamic]u8)
 	n.locals = make([]Local, 100)
+
+	n.procedure_definitions = make(map[string]i32)
+	n.procedure_invocations = make([dynamic]Procedure_Invocation)
+
 	return n
 }
 
@@ -77,6 +90,14 @@ block_add_jump :: proc(b: ^Block_Builder, op_code: OpCode) -> Jump_Info{
 	}
 }
 
+block_insert_i16 :: proc(b: ^Block_Builder, start_location: int, value: i16){
+	copy(b.code[start_location:], mem.any_to_bytes(value))
+}
+
+block_insert_i32 :: proc(b: ^Block_Builder, start_location: int, value: i32){
+	copy(b.code[start_location:], mem.any_to_bytes(value))
+}
+
 block_set_jump_location :: proc(b: ^Block_Builder, jump_info: Jump_Info){
 	copy(b.code[jump_info.instructionLocation:], mem.any_to_bytes(i32(len(b.code) - jump_info.jumpStartLocation)))
 }
@@ -103,6 +124,8 @@ assemble :: proc(code: string) -> []u8 {
 			case "PUSH":
 				append(&output, u8(OpCode.Push))
 				add_i32_from_string(&output, parts[1])
+			case "EXIT":
+				append(&output, u8(OpCode.Exit))
 			case "ADD":
 				append(&output, u8(OpCode.Add))
 			case "SUBTRACT":
@@ -208,6 +231,9 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			write_i32(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 4
+		case .Exit:
+			strings.write_string(builder, "EXIT\n")
+			return 1
 		case .Add:
 			strings.write_string(builder, "ADD\n")
 			return 1

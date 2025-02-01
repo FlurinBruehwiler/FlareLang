@@ -2,24 +2,15 @@ package compiler
 
 import "core:fmt"
 
-/*
-
-	Node
-		Ast_Statement
-			Ast_If_Statement
-			Ast_Block_Statement
-			Ast_Assignement_Statement
-		Ast_Expression
-			Ast_Number_Expression
-			Ast_Symbol_Expression
-			Ast_Binary_Expression
-*/
-
 Ast_Procedure :: struct {
 	type_identifier: Token,
 	name: Token,
 	parameters: []^Ast_Parameter,
 	body: Ast_Statement
+}
+
+Ast_File :: struct {
+	procedures: []^Ast_Procedure
 }
 
 Ast_Parameter :: struct {
@@ -34,22 +25,7 @@ Ast_Node :: union {
 	
 	^Ast_Procedure,
 	^Ast_Parameter,
-
-/*
-	//Statements
-	^Ast_If_Statement,
-	^Ast_Assignement_Statement,
-	^Ast_Block_Statement,
-	^Ast_Expression_Statement,
-
-	//Expressions
-	^Ast_Number_Expression,
-	^Ast_Identifier_Expression,
-	^Ast_Binary_Expression,
-	^Ast_Literal_Expression,
-	^Ast_Negate_Expression,
-	^Ast_Parenthesis_Expression
-	*/
+	^Ast_File
 }
 
 Ast_Statement :: union {
@@ -58,7 +34,6 @@ Ast_Statement :: union {
 	^Ast_Block_Statement,
 	^Ast_Expression_Statement,
 	^Ast_Declaration_Statement,
-	^Ast_Procedure_Invocation,
 	^Ast_For_Statement
 }
 
@@ -78,11 +53,6 @@ Ast_For_Statement :: struct {
 	body: Ast_Statement
 }
 
-Ast_Procedure_Invocation :: struct {
-	identifier: ^Ast_Identifier_Expression,
-	parameter: Ast_Expression
-}
-
 Ast_Assignement_Statement :: struct {
 	left: Ast_Expression,
 	right: Ast_Expression
@@ -98,7 +68,13 @@ Ast_Expression :: union {
 	^Ast_Binary_Expression,
 	^Ast_Literal_Expression,
 	^Ast_Negate_Expression,
-	^Ast_Parenthesis_Expression
+	^Ast_Parenthesis_Expression,
+	^Ast_Procedure_Invocation_Expression
+}
+
+Ast_Procedure_Invocation_Expression :: struct {
+	identifier: ^Ast_Identifier_Expression,
+	parameters: []Ast_Expression
 }
 
 Ast_Expression_Statement :: struct {
@@ -148,6 +124,10 @@ walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
 	nesting := nesting + 1
 
 	switch n in node {
+		case ^Ast_File:
+			for p in n.procedures {
+				walk(v, p, nesting)
+			}
 		case ^Ast_Procedure:
 			for p in n.parameters{
 				walk(v, p, nesting)
@@ -173,8 +153,6 @@ walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
         			walk(v, s.expression, nesting)
     			case ^Ast_Declaration_Statement:
     				walk(v, s.expression, nesting)	
-				case ^Ast_Procedure_Invocation:
-					walk(v, s.parameter, nesting)	
 				case ^Ast_For_Statement:
 					walk(v, s.condition, nesting)
 					walk(v, s.body, nesting)	
@@ -191,6 +169,10 @@ walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
 					walk(v, e.expression, nesting)
 				case ^Ast_Negate_Expression:
 					walk(v, e.expression, nesting)
+				case ^Ast_Procedure_Invocation_Expression:
+					for p in e.parameters {
+						walk(v, p, nesting)							
+					}
 			}
 		case:
 			fmt.printfln("%v doesn't match anything")

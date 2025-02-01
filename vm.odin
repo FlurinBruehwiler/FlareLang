@@ -14,6 +14,7 @@ Block :: struct {
 VM :: struct {
 	block: ^Block,
 	ip: int,
+	base_pointer: int, //the base of the current procedure
 	stack: []i32,
 	stack_top: int
 }
@@ -34,6 +35,8 @@ execute :: proc(vm: ^VM){
 		switch OpCode(read_byte(vm)){
 			case .Push:
 				push(vm, read_i32(vm))
+			case .Exit:
+				return
 			case .Add:
 				push(vm, pop(vm) + pop(vm))
 			case .Subtract:
@@ -43,10 +46,15 @@ execute :: proc(vm: ^VM){
 			case .Multiply:
 				push(vm, pop(vm) * pop(vm))
 			case .Call:
-				push(vm, i32(vm.ip))
-				vm.ip = int(read_i16(vm))
+				new_ip := int(read_i32(vm)) //jump
+				push(vm, i32(vm.ip)) //push return address
+				push(vm, i32(vm.base_pointer)) //push current base pointer
+				vm.ip = new_ip
+				vm.base_pointer = vm.stack_top
 			case .Return:
-				vm.ip = int(pop(vm))
+				vm.stack_top = vm.base_pointer //pop off all locals
+				vm.base_pointer = int(pop(vm)) //restore base pointer
+				vm.ip = int(pop(vm)) //jump to return address
 			case .Pop:
 				pop(vm)
 			case .Set_Local:

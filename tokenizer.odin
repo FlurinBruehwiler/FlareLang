@@ -71,13 +71,14 @@ Token_Kind :: enum {
 	Open_Brace,
 	Close_Brace,
 
+	Comma,
+
 	Keyword_Begin,
 		If,
 		Else,
 		For,
 		Return,
 		Var,
-		Print,
 	Keyword_End,
 
 	COUNT
@@ -126,13 +127,14 @@ tokens := [Token_Kind.COUNT]string {
 	"{",
 	"}",
 
+	",",
+
 	"",
-	"if",
-	"else",
-	"for",
-	"return",
-	"var",
-	"print",
+		"if",
+		"else",
+		"for",
+		"return",
+		"var",
 	""
 }
 
