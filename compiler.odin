@@ -5,12 +5,22 @@ import "core:mem"
 import "core:slice"
 
 Local :: struct {
-	name: string
+	name: string,
+	offset: i16 //the offset compared to the procedure start, parameters are negative, locals are 0 or positive
+}
+
+define_parameter :: proc(b: ^Block_Builder, name: string, offset: i16){
+	b.locals[b.local_count] = Local {
+		name = name,
+		offset = offset
+	}
+	b.local_count += 1
 }
 
 define_local :: proc(b: ^Block_Builder, name: string){
 	b.locals[b.local_count] = Local {
-		name = name
+		name = name,
+		offset = b.local_count
 	}
 	b.local_count += 1
 }
@@ -18,7 +28,7 @@ define_local :: proc(b: ^Block_Builder, name: string){
 resolve_local :: proc(b: ^Block_Builder, name: string) -> i16 {
 	for i := b.local_count - 1; i >= 0; i -= 1 {
 		if b.locals[i].name == name {
-			return i16(i)
+			return b.locals[i].offset
 		}
 	}
 	return -1
@@ -62,6 +72,11 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 		case ^Ast_Procedure:
 			reset_locals(b) //locals are per function
 			b.procedure_definitions[n.name.text] = i32(len(b.code))
+
+			for parameter, idx in n.parameters {
+				define_parameter(b, parameter.name.text, i16(- len(n.parameters) + idx) - 2) //-2 because the return address and the base pointer come after the parameters
+			}
+
 			compile_node(b, n.body)
 			block_add_opcode(b, .Return)
 		case Ast_Expression:
@@ -95,7 +110,7 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 					block_add_opcode_i32(b, .Push, e.value)
 				case ^Ast_Identifier_Expression:
 					idx := resolve_local(b, e.identifier)
-					assert(idx != -1, fmt.tprintf("Variable %v doesn't exit", e.identifier))
+					assert(idx != -1, fmt.tprintf("Variable '%v' doesn't exit", e.identifier))
 					block_add_opcode_i16(b, .Get_Local, idx)
 				case ^Ast_Literal_Expression:
 				case ^Ast_Parenthesis_Expression:

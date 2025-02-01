@@ -241,6 +241,7 @@ scan :: proc(t: ^Tokenizer) -> Token{
 			case ']': kind = .Close_Bracket
 			case '{': kind = .Open_Brace
 			case '}': kind = .Close_Brace
+			case ',': kind = .Comma
 		}
 	}
 

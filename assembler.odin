@@ -34,7 +34,7 @@ Block_Builder :: struct {
 	data: [dynamic]u8,
 
 	locals: []Local,
-	local_count: int,
+	local_count: i16,
 
 	procedure_definitions: map[string]i32,
 	procedure_invocations: [dynamic]Procedure_Invocation

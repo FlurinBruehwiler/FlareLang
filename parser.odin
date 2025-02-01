@@ -54,18 +54,24 @@ parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
 	parameters : [dynamic]^Ast_Parameter
 
 	//parameters
-	for {
-		if p.lookahead.kind == .Close_Parenthesis {
-			break
+	if p.lookahead.kind != .Close_Parenthesis {
+		for {
+			parameter, _ := new(Ast_Parameter) 
+
+			parameter.type_identifier = parser_eat(p, .Identifier)
+			parameter.name = parser_eat(p, .Identifier)
+
+			append(&parameters, parameter)
+			
+			if p.lookahead.kind == .Close_Parenthesis {
+				break
+			}
+
+			parser_eat(p, .Comma)
 		}
-
-		parameter, _ := new(Ast_Parameter) 
-
-		parameter.type_identifier = parser_eat(p, .Identifier)
-		parameter.name = parser_eat(p, .Identifier)
-
-		append(&parameters, parameter)
 	}
+
+	
 
 	ast_procedure.parameters = parameters[:]
 
@@ -222,11 +228,11 @@ parse_binary_expression :: proc(p: ^Parser, prev_prec: int) -> Ast_Expression {
 	expression := parse_unary_expression(p)
 
 	for {
-		if p.lookahead.kind == .EOF || p.lookahead.kind == .Close_Parenthesis || p.lookahead.kind == .Equal || p.lookahead.kind == .Semicolon || p.lookahead.kind == .Comma {
+		prec := token_precedence(p, p.lookahead.kind)
+
+		if prec == 0 { //0 means not an operator
 			return expression
 		}
-
-		prec := token_precedence(p, p.lookahead.kind)
 
 		if prec <= prev_prec {
 			return expression
