@@ -130,8 +130,6 @@ execute :: proc(vm: ^VM){
 					push(vm, 0)
 				}
 		}
-
-		
 	}
 }
 

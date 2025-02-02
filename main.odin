@@ -6,11 +6,15 @@ import "core:unicode"
 import "base:runtime"
 import "core:log"
 import "core:debug/trace"
+import "core:path/filepath"
 import vmem "core:mem/virtual"
 
 console_log :: proc(data: rawptr, level: runtime.Logger_Level, text: string, options: runtime.Logger_Options, location := #caller_location){
 	fmt.print(text)
 }
+
+//to run the main.fl use this:
+// odin run . -- main.fl
 
 main :: proc(){
 	//trace.init(&global_trace_ctx)
@@ -26,11 +30,15 @@ main :: proc(){
 
 	context.logger.procedure = console_log
 
-	content, err2 := os.read_entire_file("main.fl")
+	assert(len(os.args) > 1, "Compiler needs a file as an argument")
+
+	content, err2 := os.read_entire_file(os.args[1])
+
+	_, file_name := filepath.split(os.args[1])
 
 	code := string(content)
 
-	ast := parse(code, "example.fl")
+	ast := parse(code, file_name)
 	print(ast)
 	fmt.println("--------------")
 

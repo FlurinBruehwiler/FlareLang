@@ -6,24 +6,11 @@ import "core:strconv"
 parse :: proc(content: string, file_path: string) -> ^Ast_File {
 	tokenizer := create_tokenizer(content, file_path)
 
-/*
-	for {
-		t := scan(&tokenizer)
-		
-		print_token(t)
-		if t.kind == .EOF {
-			break
-		}
-	}
-*/
-	
 	parser: Parser
 	parser.tokenizer = tokenizer
 	advance_token(&parser)
 
 	return parse_file(&parser)
-
-	//return Ast_Statement(parse_block_statement(&parser))
 }
 
 parse_file :: proc(p: ^Parser) -> ^Ast_File{
@@ -134,7 +121,7 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 	if p.lookahead.kind == .Decrement {
 		parser_eat(p, .Decrement)
 		parser_eat(p, .Semicolon)
-		
+
 		n, _ := new(Ast_Decrement_Statement)
 		n.identifier = expr.(^Ast_Identifier_Expression)
 		return n

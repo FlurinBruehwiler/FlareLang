@@ -136,6 +136,7 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 						procedure_invocation.call_block_location = len(b.code) - 4
 						append(&b.procedure_invocations, procedure_invocation)
 
+						//todo, we don't really want this if there is no return value, unfortunatly, due to the current architecture, the procedrue symbol is not resolved yet, so we can't know the signature of the procedure :(
 						if len(e.parameters) != 0 {
 							block_add_opcode_i16(b, .Swap, - i16(len(e.parameters) + 1))
 						}

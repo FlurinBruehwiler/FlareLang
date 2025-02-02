@@ -1,18 +1,10 @@
 
 void Main(){
-	
-	var x = Add(20, 10);
+	var x = 0;
 
-	for (x < 20) {
+	for (x < 100_000_000) {
 		x++;
-		Print(x);
 	}
-}
 
-int Add(int a, int b){
-
-	if(a > b)
-		return a - b;
-
-	return a + b;
+	Print(x);
 }
