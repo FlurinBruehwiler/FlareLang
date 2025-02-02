@@ -26,17 +26,9 @@ main :: proc(){
 
 	context.logger.procedure = console_log
 
-	code := `
-	void Main(){
-		var x = Add(10, 20);
+	content, err2 := os.read_entire_file("main.fl")
 
-		Print(x);
-	}
-
-	int Add(int a, int b){
-		return a + b;
-	}
-	`
+	code := string(content)
 
 	ast := parse(code, "example.fl")
 	print(ast)

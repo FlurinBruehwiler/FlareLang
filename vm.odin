@@ -42,9 +42,13 @@ execute :: proc(vm: ^VM){
 			case .Add:
 				push(vm, pop(vm) + pop(vm))
 			case .Subtract:
-				push(vm, pop(vm) - pop(vm))
+				second := pop(vm)
+				first := pop(vm) 
+				push(vm, first - second)
 			case .Divide:
-				push(vm, pop(vm) / pop(vm))
+				second := pop(vm)
+				first := pop(vm) 
+				push(vm, first / second)
 			case .Multiply:
 				push(vm, pop(vm) * pop(vm))
 			case .Call:

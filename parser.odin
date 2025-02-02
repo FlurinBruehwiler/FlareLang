@@ -123,6 +123,22 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 		n.right = right
 		return n
 	}
+	if p.lookahead.kind == .Increment {
+		parser_eat(p, .Increment)
+		parser_eat(p, .Semicolon)
+
+		n, _ := new(Ast_Increment_Statement)
+		n.identifier = expr.(^Ast_Identifier_Expression)
+		return n
+	}
+	if p.lookahead.kind == .Decrement {
+		parser_eat(p, .Decrement)
+		parser_eat(p, .Semicolon)
+		
+		n, _ := new(Ast_Decrement_Statement)
+		n.identifier = expr.(^Ast_Identifier_Expression)
+		return n
+	}
 
 	parser_eat(p, .Semicolon)
 

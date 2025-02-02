@@ -89,6 +89,10 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 					#partial switch e.operator.kind {
 						case .Add:
 							block_add_opcode(b, .Add)
+						case .Subtract:
+							block_add_opcode(b, .Subtract)
+						case .Divide:
+							block_add_opcode(b, .Divide)
 						case .Multiply:
 							block_add_opcode(b, .Multiply)
 						case .Double_Equal:
@@ -197,6 +201,18 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 					}else{
 						block_add_opcode(b, .Return)	
 					}
+				case ^Ast_Increment_Statement:
+					compile_node(b, Ast_Expression(s.identifier))
+					block_add_opcode_i32(b, .Push, 1)
+					block_add_opcode(b, .Add)
+					idx := resolve_local(b, s.identifier.identifier)
+					block_add_opcode_i16(b, .Set_Local, idx)
+				case ^Ast_Decrement_Statement:
+					compile_node(b, Ast_Expression(s.identifier))
+					block_add_opcode_i32(b, .Push, 1)
+					block_add_opcode(b, .Subtract)
+					idx := resolve_local(b, s.identifier.identifier)
+					block_add_opcode_i16(b, .Set_Local, idx)
 			}
 		case:
 			fmt.printfln("%v", typeid_of(type_of(node)))

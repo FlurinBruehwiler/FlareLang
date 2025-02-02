@@ -35,7 +35,9 @@ Ast_Statement :: union {
 	^Ast_Expression_Statement,
 	^Ast_Declaration_Statement,
 	^Ast_For_Statement,
-	^Ast_Return_Statement
+	^Ast_Return_Statement,
+	^Ast_Increment_Statement,
+	^Ast_Decrement_Statement
 }
 
 Ast_Return_Statement :: struct {
@@ -61,6 +63,14 @@ Ast_For_Statement :: struct {
 Ast_Assignement_Statement :: struct {
 	left: Ast_Expression,
 	right: Ast_Expression
+}
+
+Ast_Increment_Statement :: struct {
+	identifier: ^Ast_Identifier_Expression,
+}
+
+Ast_Decrement_Statement :: struct {
+	identifier: ^Ast_Identifier_Expression,
 }
 
 Ast_Block_Statement :: struct {
@@ -164,6 +174,10 @@ walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
 					walk(v, s.body, nesting)	
 				case ^Ast_Return_Statement:
 					walk(v, s.expression, nesting)
+				case ^Ast_Increment_Statement:
+					walk(v, Ast_Expression(s.identifier), nesting)
+				case ^Ast_Decrement_Statement:
+					walk(v, Ast_Expression(s.identifier), nesting)
 			}
 		case Ast_Expression: 
 			switch e in n{
