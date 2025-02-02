@@ -28,13 +28,13 @@ main :: proc(){
 
 	code := `
 	void Main(){
-		Test(10, 20);
+		var x = Add(10, 20);
 
-		Print(20);
+		Print(x);
 	}
 
-	void Test(int a, int b){
-		Print(a + b);
+	int Add(int a, int b){
+		return a + b;
 	}
 	`
 

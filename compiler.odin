@@ -66,7 +66,8 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 
 			//linking :)
 			for invocation in b.procedure_invocations{
-				definition := b.procedure_definitions[invocation.name]
+				definition, ok := b.procedure_definitions[invocation.name]
+				assert(ok, fmt.tprintf("No procedure named '%v' found", invocation.name))
 				block_insert_i32(b, invocation.call_block_location, definition)
 			}
 		case ^Ast_Procedure:
@@ -131,6 +132,10 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 						procedure_invocation.call_block_location = len(b.code) - 4
 						append(&b.procedure_invocations, procedure_invocation)
 
+						if len(e.parameters) != 0 {
+							block_add_opcode_i16(b, .Swap, - i16(len(e.parameters) + 1))
+						}
+
 						//todo, remove parameters in a single instruction, currently this is a huge waste..
 						for parameter in e.parameters { 
 							block_add_opcode(b, .Pop)
@@ -185,6 +190,13 @@ compile_node :: proc(b: ^Block_Builder, node: Ast_Node){
 					block_add_opcode_i32(b, .Jump, -i32(len(b.code) + 5 - for_start))
 
 					block_set_jump_location(b, jump_info)
+				case ^Ast_Return_Statement:
+					if s.expression != nil {
+						compile_node(b, s.expression)
+						block_add_opcode(b, .Return_Value)	
+					}else{
+						block_add_opcode(b, .Return)	
+					}
 			}
 		case:
 			fmt.printfln("%v", typeid_of(type_of(node)))

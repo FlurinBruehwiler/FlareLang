@@ -27,10 +27,12 @@ create_vm_from_block :: proc(block: ^Block) -> ^VM{
 }
 
 execute :: proc(vm: ^VM){
+
 	for vm.ip < len(vm.block.code) {
 		//todo(fbr): only print while debugging -- add comp time if
 		//fmt.println("----------------")
 		//print_instruction(vm.block.code, vm.ip)
+		//defer print_stack(vm)
 
 		switch OpCode(read_byte(vm)){
 			case .Push:
@@ -54,7 +56,15 @@ execute :: proc(vm: ^VM){
 			case .Return:
 				vm.stack_top = vm.base_pointer //pop off all locals
 				vm.base_pointer = int(pop(vm)) //restore base pointer
+				vm.ip = int(pop(vm)) //jump to return address				
+			case .Return_Value:
+				return_value := pop(vm)
+
+				vm.stack_top = vm.base_pointer //pop off all locals
+				vm.base_pointer = int(pop(vm)) //restore base pointer
 				vm.ip = int(pop(vm)) //jump to return address
+
+				push(vm, return_value)
 			case .Pop:
 				pop(vm)
 			case .Set_Local:
@@ -63,6 +73,11 @@ execute :: proc(vm: ^VM){
 			case .Get_Local:
 				slot := read_i16(vm)
 				push(vm, vm.stack[vm.base_pointer + int(slot)])
+			case .Swap:
+				location_to_swap := vm.stack_top + int(read_i16(vm))
+				temp := pop(vm)
+				push(vm, vm.stack[location_to_swap])
+				vm.stack[location_to_swap] = temp
 			case .Print:
 				parameter := pop(vm)
 				log.logf(.Info, "%v\n", parameter)
@@ -112,7 +127,7 @@ execute :: proc(vm: ^VM){
 				}
 		}
 
-		//print_stack(vm)
+		
 	}
 }
 

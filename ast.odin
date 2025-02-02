@@ -34,7 +34,12 @@ Ast_Statement :: union {
 	^Ast_Block_Statement,
 	^Ast_Expression_Statement,
 	^Ast_Declaration_Statement,
-	^Ast_For_Statement
+	^Ast_For_Statement,
+	^Ast_Return_Statement
+}
+
+Ast_Return_Statement :: struct {
+	expression: Ast_Expression //may be nil
 }
 
 Ast_If_Statement :: struct {
@@ -157,6 +162,8 @@ walk :: proc(v: ^Visitor, node: Ast_Node, nesting: int) {
 				case ^Ast_For_Statement:
 					walk(v, s.condition, nesting)
 					walk(v, s.body, nesting)	
+				case ^Ast_Return_Statement:
+					walk(v, s.expression, nesting)
 			}
 		case Ast_Expression: 
 			switch e in n{

@@ -82,6 +82,20 @@ parse_proc :: proc(p: ^Parser) -> ^Ast_Procedure{
 	return ast_procedure
 }
 
+parse_return_statement :: proc(p: ^Parser) -> ^Ast_Return_Statement {
+	parser_eat(p, .Return)
+
+	n, _ := new(Ast_Return_Statement)
+
+	if p.lookahead.kind != .Semicolon {
+		n.expression = parse_expression(p)
+	}
+
+	parser_eat(p, .Semicolon)
+
+	return n
+}
+
 parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 
 	#partial switch p.lookahead.kind {
@@ -93,6 +107,8 @@ parse_statement :: proc(p: ^Parser) -> Ast_Statement {
 			return parse_for_statement(p)
 		case .Open_Brace:
 			return parse_block_statement(p)
+		case .Return:
+			return parse_return_statement(p)
 	}
 
 	expr := parse_expression(p)

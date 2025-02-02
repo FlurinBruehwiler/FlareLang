@@ -16,8 +16,10 @@ OpCode :: enum u8 {
 	Multiply,
 	Call,
 	Return,
+	Return_Value,
 	Set_Local,
 	Get_Local,
+	Swap,
 	Print,
 	Jump_If_False,
 	Jump,
@@ -138,6 +140,8 @@ assemble :: proc(code: string) -> []u8 {
 				add_i32_from_string(&output, parts[1])
 			case "RETURN":
 				append(&output, u8(OpCode.Return))
+			case "RETURNVALUE":
+				append(&output, u8(OpCode.Return))
 			case "POP":
 				append(&output, u8(OpCode.Pop))
 			case "GETLOCAL":
@@ -145,6 +149,9 @@ assemble :: proc(code: string) -> []u8 {
 				add_i16_from_string(&output, parts[1])
 			case "SETLOCAL":
 				append(&output, u8(OpCode.Get_Local))
+				add_i16_from_string(&output, parts[1])
+			case "SWAP":
+				append(&output, u8(OpCode.Swap))
 				add_i16_from_string(&output, parts[1])
 			case "PRINT":
 				append(&output, u8(OpCode.Print))
@@ -253,6 +260,9 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 		case .Return:
 			strings.write_string(builder, "RETURN\n")
 			return 1
+		case .Return_Value:
+			strings.write_string(builder, "RETURNVALUE\n")
+			return 1
 		case .Pop:
 			strings.write_string(builder, "POP\n")
 			return 1
@@ -263,6 +273,11 @@ disassemble_instruction :: proc(code: []u8, offset: int, builder: ^strings.Build
 			return 1 + 2
 		case .Set_Local:
 			strings.write_string(builder, "SETLOCAL ")
+			write_i16(builder, code[offset + 1:])
+			strings.write_string(builder, "\n")
+			return 1 + 2
+		case .Swap:
+			strings.write_string(builder, "SWAP ")
 			write_i16(builder, code[offset + 1:])
 			strings.write_string(builder, "\n")
 			return 1 + 2
